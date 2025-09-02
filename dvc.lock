@@ -1,0 +1,66 @@
+schema: '2.0'
+stages:
+  download:
+    cmd: python src/data/download_dataset.py
+    deps:
+    - path: src/data/download_dataset.py
+      hash: md5
+      md5: b6da3fd238b65b74c435987c105f96f6
+      size: 924
+    outs:
+    - path: data/raw/mit-bih-arrhythmia-database-1.0.0
+      hash: md5
+      md5: c49f48619f97c94ae6b3aac575375b8e.dir
+      size: 109337739
+      nfiles: 705
+  preprocess:
+    cmd: python -m src.data.generate_data
+    deps:
+    - path: data/raw/mit-bih-arrhythmia-database-1.0.0
+      hash: md5
+      md5: c49f48619f97c94ae6b3aac575375b8e.dir
+      size: 109337739
+      nfiles: 705
+    - path: src/data/generate_data.py
+      hash: md5
+      md5: d786cef4f662fb5b935a7eda9893199f
+      size: 2694
+    - path: src/preprocessing.py
+      hash: md5
+      md5: 94ebcacb40934c0b072acd15609efd82
+      size: 11167
+  evaluate:
+    cmd: python -m src.evaluate
+    deps:
+    - path: data/processed/base/mitbih_train.csv
+      hash: md5
+      md5: 348242b84db7fa32444860db6eda74bc
+      size: 349974438
+    - path: data/processed/cnn/mitbih_train_cnn.csv
+      hash: md5
+      md5: d92ea719f4367d984a5c705d9a8de8bd
+      size: 69376356
+    - path: data/processed/feat/mitbih_train_features.csv
+      hash: md5
+      md5: d8fe3fe1c35cb31b35e077344a2b347f
+      size: 417797976
+    - path: data/processed/feat_only/mitbih_train_features_only.csv
+      hash: md5
+      md5: 2ab3acfb250e9d856d340b7e85789f72
+      size: 67994862
+    - path: src/evaluate.py
+      hash: md5
+      md5: 864dcc739dc41d9122e4f5473ac4e56d
+      size: 5377
+    - path: src/saved_models/modelCNNMLP.keras
+      hash: md5
+      md5: 3b900fc1a01b77b48c725474a866e8d3
+      size: 11125416
+    - path: src/saved_models/modelCONVXGB.joblib
+      hash: md5
+      md5: f4ae72514adaf80bcc6876cf34b23f38
+      size: 7873949
+    - path: src/saved_models/modelXGB.joblib
+      hash: md5
+      md5: 48225871f4772b33d33f9a89d54f1942
+      size: 19189885

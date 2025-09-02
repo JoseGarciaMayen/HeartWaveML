@@ -1,0 +1,13 @@
+testHWML.csv
+testHWML.txt
+LICENSE
+README.md
+__pycache__
+environment.yml
+mlartifacts/
+mlruns/
+notebooks/
+data/raw/
+data/processed/
+data/interim/
+*.csv

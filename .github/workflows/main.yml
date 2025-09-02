@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+    branches: [ "main" ] 
+  pull_request:
+    branches: [ "main" ]
+
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with: 
+          submodules: true
+
+      - name: Setup DVC
+        uses: iterative/setup-dvc@v1
+
+      - name: Configure DVC
+        run: |
+          dvc remote modify origin --local access_key_id ${{ secrets.DAGSHUB_KEY_ID }}
+          dvc remote modify origin --local secret_access_key ${{ secrets.DAGSHUB_SECRET_ID }}
+
+      - name: DVC Pull specific model
+        run: dvc pull -f -r origin src/saved_models/modelCONVXGB.joblib src/saved_models/scaler_convxgb.joblib src/saved_models/feature_extractor.onnx
+
+      - name: Docker login
+        run: docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Docker build
+        run: docker build -t josegm61/heartwaveml:latest .
+
+      - name: Docker push
+        run: docker push josegm61/heartwaveml:latest

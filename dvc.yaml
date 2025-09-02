@@ -1,0 +1,25 @@
+stages:
+  download:
+    cmd: python src/data/download_dataset.py
+    deps:
+      - src/data/download_dataset.py
+    outs:
+      - data/raw/mit-bih-arrhythmia-database-1.0.0
+  preprocess:
+    cmd: python -m src.data.generate_data
+    deps:
+    - data/raw/mit-bih-arrhythmia-database-1.0.0
+    - src/data/generate_data.py
+    - src/preprocessing.py
+
+  evaluate:
+    cmd: python -m src.evaluate
+    deps:
+    - data/processed/base/mitbih_train.csv
+    - data/processed/feat/mitbih_train_features.csv
+    - data/processed/feat_only/mitbih_train_features_only.csv
+    - data/processed/cnn/mitbih_train_cnn.csv
+    - src/saved_models/modelXGB.joblib
+    - src/saved_models/modelCNNMLP.keras
+    - src/saved_models/modelCONVXGB.joblib
+    - src/evaluate.py

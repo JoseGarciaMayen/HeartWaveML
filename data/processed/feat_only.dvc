@@ -1,0 +1,6 @@
+outs:
+- md5: 5101176bde3258aed18802b7e27fde01.dir
+  size: 83724564
+  nfiles: 3
+  hash: md5
+  path: feat_only

@@ -1,0 +1,6 @@
+outs:
+- md5: 64306b3e79cd7df28929ecfa42b196fb.dir
+  size: 514467965
+  nfiles: 3
+  hash: md5
+  path: feat
