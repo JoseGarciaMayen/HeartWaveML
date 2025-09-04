@@ -66,7 +66,6 @@ def api_info():
     endpoints = [
         "/",
         "/predict",
-        "/batch-predict",
         "/health",
         "/metrics",
         "/docs",
@@ -74,9 +73,9 @@ def api_info():
     ]
     
     model_info = {
-        "model_type": "XGBoost",
+        "model_type": "CONVXGBoost",
         "input_shape": "Variable (ECG signal)",
-        "output": "Classification probability",
+        "output": "Classification",
         "available": PREDICT_AVAILABLE
     }
     
@@ -91,10 +90,10 @@ def api_info():
 @app.post("/predict", tags=["Prediction"])
 def classify_ecg_batch(samples: List[ECGSample]):
     """Classifies a batch of ECG signals"""
-    if len(samples) > 50:
+    if len(samples) > 200:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Batch size too large. Maximum: 50 samples, received: {len(samples)}"
+            detail=f"Batch size too large. Maximum: 200 samples, received: {len(samples)}"
         )
     
     results = []
