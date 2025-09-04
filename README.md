@@ -8,6 +8,8 @@
 [![Kaggle](https://img.shields.io/badge/📊-Kaggle_Notebook-blue.svg)](https://www.kaggle.com/code/josegarciamayen/heartwaveml)
 [![Blog]( https://img.shields.io/badge/🔗-Code_explanation-red)](https://josegarciamayen.com/blog)
 
+![HeartWaveML](https://github.com/JoseGarciaMayen/HeartWaveML/blob/main/assets/heartwaveml_title.png)
+
 </div>
 
 ## Project Overview
@@ -27,8 +29,8 @@ This project implements an advanced machine learning pipeline for ***automated E
 | **Overall Accuracy** | ***98.51%*** | 98.48% | 98.48% |
 | **Precision** | 98.49% | 98.45% | ***98.56%*** |
 | **Recall** | ***98.51%*** | 98.48% | 98.48% |
-| **F1-Score** | 98.48% | 98.46% | ***98.51%*** |
-| **F1-Score (avg)** | ***92.87%*** | 92.13% | 91.51% |
+| **F1-Score (weighted)** | 98.48% | 98.46% | ***98.51%*** |
+| **F1-Score (macro)** | ***92.87%*** | 92.13% | 91.51% |
 
 </div>
 
