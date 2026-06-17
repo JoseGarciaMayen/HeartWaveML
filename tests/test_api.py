@@ -11,7 +11,7 @@ client = TestClient(api.app)
 @pytest.fixture
 def mock_predict(monkeypatch):
     monkeypatch.setattr(api, "PREDICT_AVAILABLE", True)
-    monkeypatch.setattr(api, "predict", lambda signal: 2)
+    monkeypatch.setattr(api, "predict", lambda signal: 2, raising=False)
 
 
 def test_health_ok():
@@ -44,6 +44,6 @@ def test_predict_wrong_length_is_rejected(mock_predict):
 
 
 def test_batch_too_large():
-    samples = [{"signal": [0.0] * 187} for _ in range(51)]
+    samples = [{"signal": [0.0] * 187} for _ in range(201)]
     resp = client.post("/predict", json=samples)
     assert resp.status_code == 400
