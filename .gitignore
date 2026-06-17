@@ -20,5 +20,8 @@ __pycache__/
 *.txt
 !requirements_api.txt
 !requirements.txt
+!requirements-dev.txt
 .env
 !*.dvc
+.venv
+!
