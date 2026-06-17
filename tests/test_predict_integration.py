@@ -6,7 +6,7 @@ import pytest
 MODEL = "src/saved_models/modelCONVXGB.joblib"
 SCALER = "src/saved_models/scaler_convxgb.joblib"
 EXTRACTOR = "src/saved_models/feature_extractor.onnx"
-SAMPLES = "testHWML.csv"
+SAMPLES = os.path.join(os.path.dirname(__file__), "fixtures", "sample_beats.csv")
 
 pytestmark = pytest.mark.integration
 
