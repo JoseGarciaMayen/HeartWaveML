@@ -1,15 +1,16 @@
-from xgboost import XGBClassifier
-from src.training.trainer import TrainerBase
-import mlflow
 import gc
-from sklearn.metrics import f1_score, log_loss
-from src.utils import notify_telegram
+
+import mlflow
 from mlflow.models import infer_signature
+from sklearn.metrics import f1_score, log_loss
+from xgboost import XGBClassifier
+
+from src.training.trainer import TrainerBase
+from src.utils import notify_telegram
+
 
 class TrainerCONVXGB(TrainerBase):
-    def __init__(self,
-                 model_name = "modelCONVXGB",
-                 mlflow_experiment_name ="ECG_CONVX"):
+    def __init__(self, model_name="modelCONVXGB", mlflow_experiment_name="ECG_CONVX"):
         super().__init__(model_name, mlflow_experiment_name)
 
     def get_typed_params(self, best_params):
@@ -26,28 +27,28 @@ class TrainerCONVXGB(TrainerBase):
             "colsample_bylevel": float,
             "gamma": float,
             "reg_alpha": float,
-            "reg_lambda": float
+            "reg_lambda": float,
         }
-        
+
         typed_best_params = {}
         for k, v in best_params.items():
             type = param_types.get(k, str)
             typed_best_params[k] = type(v)
         return typed_best_params
-    
+
     def create_model(self):
         best_params = self.get_params()
         typed_best_params = self.get_typed_params(best_params)
         return XGBClassifier(**typed_best_params), typed_best_params
-    
+
     def mlflow_start(self, model, X_train, y_train, X_cv, y_cv, params, params_cnn):
 
         with mlflow.start_run(nested=True):
             for k, v in params.items():
-                mlflow.log_param(k, v)     
+                mlflow.log_param(k, v)
 
             for k, v in params_cnn.items():
-                mlflow.log_param(k, v)       
+                mlflow.log_param(k, v)
 
             model.fit(X_train, y_train, verbose=True, eval_set=[(X_cv, y_cv)])
 
@@ -64,19 +65,23 @@ class TrainerCONVXGB(TrainerBase):
             mlflow.log_metric("val_loss", val_loss)
 
             y_cv_pred = model.predict(X_cv)
-            val_f1 = f1_score(y_cv, y_cv_pred, average='macro')
-            val_f1_weighted = f1_score(y_cv, y_cv_pred, average='weighted')
+            val_f1 = f1_score(y_cv, y_cv_pred, average="macro")
+            val_f1_weighted = f1_score(y_cv, y_cv_pred, average="weighted")
             mlflow.log_metric("val_f1_macro", val_f1)
             mlflow.log_metric("val_f1_weighted", val_f1_weighted)
 
             input_example = X_train.iloc[:5]
             signature = infer_signature(input_example, model.predict(input_example))
-            mlflow.xgboost.log_model(model, self.model_name, registered_model_name=self.model_name, signature=signature)
+            mlflow.xgboost.log_model(
+                model, self.model_name, registered_model_name=self.model_name, signature=signature
+            )
             self.save_model(model, self.model_name)
-            
+
             del model
             gc.collect()
-            notify_telegram(f"Model logged with val_f1_macro: {val_f1:.4f}, val_f1_weighted: {val_f1_weighted:.4f}")
+            notify_telegram(
+                f"Model logged with val_f1_macro: {val_f1:.4f}, val_f1_weighted: {val_f1_weighted:.4f}"
+            )
             return val_f1
 
     def train(self):
@@ -84,20 +89,23 @@ class TrainerCONVXGB(TrainerBase):
         Function to train the XGBoost model with the best hyperparameters found by Optuna.
         It logs the model and metrics to MLflow.
         """
-        X_train , y_train, X_cv, y_cv, class_weights = self.load_data('data/processed/cnn/mitbih_train_cnn.csv', 'data/processed/cnn/mitbih_cv_cnn.csv')
+        X_train, y_train, X_cv, y_cv, class_weights = self.load_data(
+            "data/processed/cnn/mitbih_train_cnn.csv", "data/processed/cnn/mitbih_cv_cnn.csv"
+        )
 
         params_cnn = {
-        "l2": 0,
-        "dropout": 0,
-        "learning_rate_cnn": 0.01,
-        "filters1": 16,
-        "filters2": 32,
-        "filters3": 64,
+            "l2": 0,
+            "dropout": 0,
+            "learning_rate_cnn": 0.01,
+            "filters1": 16,
+            "filters2": 32,
+            "filters3": 64,
         }
 
         model, typed_best_params = self.create_model()
 
         self.mlflow_start(model, X_train, y_train, X_cv, y_cv, typed_best_params, params_cnn)
+
 
 if __name__ == "__main__":
     trainer = TrainerCONVXGB()

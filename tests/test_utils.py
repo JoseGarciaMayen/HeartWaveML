@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from src.utils import get_filter_coeffs, apply_filter, get_class_mapping
+from src.utils import apply_filter, get_class_mapping, get_filter_coeffs
 
 
 def test_get_filter_coeffs_shape_and_normalisation():

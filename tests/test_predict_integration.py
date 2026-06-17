@@ -11,7 +11,9 @@ SAMPLES = os.path.join(os.path.dirname(__file__), "fixtures", "sample_beats.csv"
 pytestmark = pytest.mark.integration
 
 models_present = all(os.path.exists(p) for p in (MODEL, SCALER, EXTRACTOR, SAMPLES))
-needs_models = pytest.mark.skipif(not models_present, reason="model files not pulled (run `dvc pull`)")
+needs_models = pytest.mark.skipif(
+    not models_present, reason="model files not pulled (run `dvc pull`)"
+)
 
 
 def _load_sample_beats():

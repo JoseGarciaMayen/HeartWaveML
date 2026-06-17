@@ -1,11 +1,15 @@
 import os
-import requests
 import zipfile
 from io import BytesIO
 
-MITBIH_URL = "https://physionet.org/static/published-projects/mitdb/mit-bih-arrhythmia-database-1.0.0.zip"
+import requests
+
+MITBIH_URL = (
+    "https://physionet.org/static/published-projects/mitdb/mit-bih-arrhythmia-database-1.0.0.zip"
+)
 
 DEST_FOLDER = os.path.join("data", "raw")
+
 
 def download_and_extract():
     os.makedirs(DEST_FOLDER, exist_ok=True)
@@ -23,6 +27,7 @@ def download_and_extract():
             zip_ref.extractall(DEST_FOLDER)
 
         print("Extraction ended. Dataset downloaded and extracted at data/raw.")
+
 
 if __name__ == "__main__":
     download_and_extract()

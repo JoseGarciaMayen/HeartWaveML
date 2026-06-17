@@ -1,28 +1,31 @@
-import mlflow
-import joblib
-from mlflow.tracking import MlflowClient
-import pandas as pd
-from src.utils import get_class_weights
-from dotenv import load_dotenv
 import os
+
+import joblib
+import mlflow
+import pandas as pd
+from dotenv import load_dotenv
+from mlflow.tracking import MlflowClient
+
+from src.utils import get_class_weights
 
 load_dotenv()
 IP = os.getenv("IP")
 
+
 class TrainerBase:
-    def __init__(self, model_name, mlflow_experiment_name,  mlflow_tracking_uri=f"http://{IP}:5000"):
+    def __init__(self, model_name, mlflow_experiment_name, mlflow_tracking_uri=f"http://{IP}:5000"):
         self.model_name = model_name
         self.mlflow_tracking_uri = mlflow_tracking_uri
         self.mlflow_experiment_name = mlflow_experiment_name
         mlflow.set_tracking_uri(self.mlflow_tracking_uri)
-        mlflow.set_experiment(f"{ self.mlflow_experiment_name}_training")
+        mlflow.set_experiment(f"{self.mlflow_experiment_name}_training")
 
     def create_model(self):
         raise NotImplementedError("This method should be implemented in subclasses.")
-    
+
     def get_params(self, run_id=None):
         client = MlflowClient(tracking_uri=self.mlflow_tracking_uri)
-        experiment = client.get_experiment_by_name(f"{ self.mlflow_experiment_name}_tuning")
+        experiment = client.get_experiment_by_name(f"{self.mlflow_experiment_name}_tuning")
         runs = client.search_runs(
             [experiment.experiment_id],
             order_by=["metrics.val_f1_macro DESC"],
@@ -45,25 +48,26 @@ class TrainerBase:
         train_df = pd.read_csv(train_path)
         cv_df = pd.read_csv(cv_path)
 
-        X_train = train_df.drop('class', axis=1)
-        y_train = train_df['class']
+        X_train = train_df.drop("class", axis=1)
+        y_train = train_df["class"]
 
-        X_cv = cv_df.drop('class', axis=1)
-        y_cv = cv_df['class']
+        X_cv = cv_df.drop("class", axis=1)
+        y_cv = cv_df["class"]
 
         class_weights = get_class_weights()
 
         return X_train, y_train, X_cv, y_cv, class_weights
-    
+
     def save_model(self, model, model_name):
         joblib.dump(model, f"src/saved_models/{model_name}.joblib")
-    
+
     def mlflow_start(self, model, X_train, y_train, X_cv, y_cv, class_weights, params):
         raise NotImplementedError("This method should be implemented in subclasses.")
 
     def train(self):
         raise NotImplementedError("This method should be implemented in subclasses.")
-    
+
+
 if __name__ == "__main__":
     trainer = TrainerBase("modelXGB", "ECG_XGB")
     print(trainer.mlflow_tracking_uri)
