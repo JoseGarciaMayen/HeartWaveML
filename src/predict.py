@@ -12,9 +12,9 @@ def predict(X_test, model="src/saved_models/modelCONVXGB.joblib"):
     
     model = joblib.load(model)
 
+    # XGBClassifier.predict returns class labels (e.g. [2]), one per sample.
     y_pred = model.predict(X_test)
-    y_pred = np.argmax(y_pred)
-    return y_pred
+    return int(y_pred[0])
     
 
 if __name__ == '__main__':

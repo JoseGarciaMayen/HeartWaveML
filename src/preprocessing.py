@@ -234,7 +234,7 @@ def preprocess_xgb(beat_signal):
     
     scaler = joblib.load('src/saved_models/scaler.joblib')
 
-    a, b = get_filter_coeffs()
+    b, a = get_filter_coeffs()
     combined = np.apply_along_axis(apply_filter, axis=1, arr=combined, b=b, a=a)
     combined = scaler.transform(combined)
     combined = pd.DataFrame(combined, columns=column_beats + column_feats)
@@ -251,7 +251,7 @@ def preprocess_convxgb(beat_signal):
     """
     scaler = joblib.load('src/saved_models/scaler_convxgb.joblib')
 
-    a, b = get_filter_coeffs()
+    b, a = get_filter_coeffs()
     beat_signal = np.apply_along_axis(apply_filter, axis=0, arr=beat_signal, b=b, a=a)
     beat_signal = scaler.transform(beat_signal.reshape(1, -1))
     
