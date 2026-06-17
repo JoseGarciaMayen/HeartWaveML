@@ -1,7 +1,17 @@
+# Secrets and VCS (must never end up in the published image)
+.env
+.git
+.github
+.dvc
+*.dvc
+
+# Project files not needed at runtime
 testHWML.csv
 testHWML.txt
 LICENSE
 README.md
+assets/
+web/
 __pycache__
 environment.yml
 mlartifacts/
@@ -11,3 +21,10 @@ data/raw/
 data/processed/
 data/interim/
 *.csv
+.env
+.git
+.github
+.dvc
+assets/
+web/
+*.dvc
