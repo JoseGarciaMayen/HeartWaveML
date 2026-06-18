@@ -148,6 +148,7 @@ def split_data(path="data/interim/mitbih_combined_records.csv"):
     X_cv_scaled = scaler.transform(X_cv_filtered)
     X_test_scaled = scaler.transform(X_test_filtered)
 
+    os.makedirs("src/saved_models", exist_ok=True)
     if path == "data/interim/mitbih_features.csv":
         joblib.dump(scaler, "src/saved_models/scaler.joblib")
     elif path == "data/interim/mitbih_combined_records.csv":

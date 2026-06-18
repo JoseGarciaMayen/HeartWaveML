@@ -1,3 +1,5 @@
+import os
+
 import pandas as pd
 import tensorflow as tf
 import tf2onnx
@@ -76,6 +78,7 @@ feature_extractor = create_model_cnn(
     input_shape=(187, 1), X_train=X_train, y_train=y_train, X_cv=X_cv, y_cv=y_cv, params=params_cnn
 )
 
+os.makedirs("src/saved_models", exist_ok=True)
 tf.keras.models.save_model(feature_extractor, "src/saved_models/feature_extractor.keras")
 
 # Convert to ONNX to use it in API and avoid tensorflow dependency

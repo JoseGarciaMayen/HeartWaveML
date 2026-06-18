@@ -59,6 +59,7 @@ class TrainerBase:
         return X_train, y_train, X_cv, y_cv, class_weights
 
     def save_model(self, model, model_name):
+        os.makedirs("src/saved_models", exist_ok=True)
         joblib.dump(model, f"src/saved_models/{model_name}.joblib")
 
     def mlflow_start(self, model, X_train, y_train, X_cv, y_cv, class_weights, params):
