@@ -24,7 +24,7 @@ def extract_features_from_beat(beat_signal, fs=360):
 
     if len(beat_signal) < 10 or np.all(beat_signal == 0):
         return features
-    peaks = find_peaks(beat_signal, height=np.max(beat_signal) * 0.3, distance=int(0.2 * fs))
+    peaks, _ = find_peaks(beat_signal, height=np.max(beat_signal) * 0.3, distance=int(0.2 * fs))
     total_area = np.trapz(np.abs(beat_signal))
     features["mean"] = np.mean(beat_signal)
     features["std"] = np.std(beat_signal)
