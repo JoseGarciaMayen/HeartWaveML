@@ -73,7 +73,7 @@ def extract_features_from_dataframe():
     features = []
 
     df = pd.read_csv("data/interim/mitbih_combined_records.csv")
-    X = df.drop("class", axis=1)
+    X = df.drop(["class", "record"], axis=1)
 
     print("Extracting features from dataset...")
     for i in range(len(X)):
@@ -90,6 +90,7 @@ def extract_features_from_dataframe():
     X_concat.to_csv("data/interim/mitbih_features.csv", index=False)
 
     features["class"] = df["class"]
+    features["record"] = df["record"]
     features.to_csv("data/interim/mitbih_features_only.csv", index=False)
 
     print("Saved in the following archives:")
@@ -101,20 +102,32 @@ def split_data(path="data/interim/mitbih_combined_records.csv"):
     """
     Splits the dataset into training, validation and testing sets.
     Then, applies SMOTE, filtering and scaling.
+
+    The split is patient-wise (grouped by the ``record`` column) so that beats
+    from the same patient never appear in more than one set. This follows the
+    inter-patient evaluation paradigm and avoids inter-patient data leakage.
     """
     from imblearn.over_sampling import SMOTE
-    from sklearn.model_selection import train_test_split
+    from sklearn.model_selection import GroupShuffleSplit
     from sklearn.preprocessing import StandardScaler
 
     df = pd.read_csv(path)
-    X = df.drop("class", axis=1)
+    groups = df["record"]
+    X = df.drop(["class", "record"], axis=1)
     y = df["class"]
 
-    X_train, X_, y_train, y_ = train_test_split(X, y, test_size=0.2, stratify=y, random_state=42)
+    # 80% of patients for training, the remaining 20% split into cv / test.
+    gss = GroupShuffleSplit(n_splits=1, test_size=0.2, random_state=42)
+    train_idx, temp_idx = next(gss.split(X, y, groups))
 
-    X_cv, X_test, y_cv, y_test = train_test_split(
-        X_, y_, test_size=0.5, stratify=y_, random_state=42
-    )
+    X_train, y_train = X.iloc[train_idx], y.iloc[train_idx]
+    X_, y_, groups_ = X.iloc[temp_idx], y.iloc[temp_idx], groups.iloc[temp_idx]
+
+    gss_temp = GroupShuffleSplit(n_splits=1, test_size=0.5, random_state=42)
+    cv_idx, test_idx = next(gss_temp.split(X_, y_, groups_))
+
+    X_cv, y_cv = X_.iloc[cv_idx], y_.iloc[cv_idx]
+    X_test, y_test = X_.iloc[test_idx], y_.iloc[test_idx]
 
     sampling_strategy_dict = {3: 5000, 1: 5000}
 

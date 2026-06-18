@@ -37,9 +37,10 @@ def generateData(data=None, record_numbers=None, window_size=187):
                     if end - start == window_size:
                         beat_samples = record.p_signal[start:end, 0].tolist()
                         beat_samples.append(class_mapping[symbol])
+                        beat_samples.append(record_number)
                         rows.append(beat_samples)
 
-        column_names = [f"sample_{i}" for i in range(window_size)] + ["class"]
+        column_names = [f"sample_{i}" for i in range(window_size)] + ["class", "record"]
 
         df = pd.DataFrame(rows, columns=column_names)
 
