@@ -9,6 +9,25 @@ from scipy.stats import kurtosis, skew
 
 from src.utils import apply_filter, get_filter_coeffs
 
+# Inter-patient split following de Chazal et al. (2004). DS1 is used for
+# training/validation and DS2 for testing; no patient appears in both, which
+# avoids inter-patient data leakage. The 4 paced records (102, 104, 107, 217)
+# are excluded per the AAMI recommendation, so any record not listed here is
+# dropped from the dataset.
+DS1_RECORDS = {
+    "101", "106", "108", "109", "112", "114", "115", "116", "118", "119", "122",
+    "124", "201", "203", "205", "207", "208", "209", "215", "220", "223", "230",
+}
+DS2_RECORDS = {
+    "100", "103", "105", "111", "113", "117", "121", "123", "200", "202", "210",
+    "212", "213", "214", "219", "221", "222", "228", "231", "232", "233", "234",
+}
+# Validation records carved out of DS1. Chosen so all 5 classes (including the
+# rare fusion class 3) are represented in cv, while keeping record 208 (which
+# holds most of the fusion beats) in the training set.
+CV_RECORDS = {"108", "205", "223"}
+TRAIN_RECORDS = DS1_RECORDS - CV_RECORDS
+
 
 def extract_features_from_beat(beat_signal, fs=360):
     """
@@ -106,33 +125,29 @@ def split_data(path="data/interim/mitbih_combined_records.csv"):
     Splits the dataset into training, validation and testing sets.
     Then, applies SMOTE, filtering and scaling.
 
-    The split is patient-wise (grouped by the ``record`` column) so that beats
-    from the same patient never appear in more than one set. This follows the
-    inter-patient evaluation paradigm and avoids inter-patient data leakage.
+    The split is patient-wise following the de Chazal DS1/DS2 partition (see
+    ``DS1_RECORDS``/``DS2_RECORDS``): training and validation come from DS1 and
+    the test set is DS2, so no patient appears in more than one set. This is the
+    standard inter-patient paradigm and avoids inter-patient data leakage.
     """
     from imblearn.over_sampling import SMOTE
-    from sklearn.model_selection import GroupShuffleSplit
     from sklearn.preprocessing import StandardScaler
 
     df = pd.read_csv(path)
-    groups = df["record"]
+    record = df["record"].astype(str)
     X = df.drop(["class", "record"], axis=1)
     y = df["class"]
 
-    # 80% of patients for training, the remaining 20% split into cv / test.
-    gss = GroupShuffleSplit(n_splits=1, test_size=0.2, random_state=42)
-    train_idx, temp_idx = next(gss.split(X, y, groups))
+    train_mask = record.isin(TRAIN_RECORDS)
+    cv_mask = record.isin(CV_RECORDS)
+    test_mask = record.isin(DS2_RECORDS)
+    # Beats from records in neither list (the paced ones) are dropped.
 
-    X_train, y_train = X.iloc[train_idx], y.iloc[train_idx]
-    X_, y_, groups_ = X.iloc[temp_idx], y.iloc[temp_idx], groups.iloc[temp_idx]
+    X_train, y_train = X[train_mask], y[train_mask]
+    X_cv, y_cv = X[cv_mask], y[cv_mask]
+    X_test, y_test = X[test_mask], y[test_mask]
 
-    gss_temp = GroupShuffleSplit(n_splits=1, test_size=0.5, random_state=42)
-    cv_idx, test_idx = next(gss_temp.split(X_, y_, groups_))
-
-    X_cv, y_cv = X_.iloc[cv_idx], y_.iloc[cv_idx]
-    X_test, y_test = X_.iloc[test_idx], y_.iloc[test_idx]
-
-    sampling_strategy_dict = {3: 5000, 1: 5000}
+    sampling_strategy_dict = {1: 5000, 2: 5000, 3: 5000, 4: 5000}
 
     smote = SMOTE(sampling_strategy=sampling_strategy_dict, random_state=42, k_neighbors=5)
 
