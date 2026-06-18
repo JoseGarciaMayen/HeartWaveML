@@ -29,7 +29,7 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -151,6 +151,8 @@ def classify_ecg(sample: ECGSample):
             processing_time_ms=round(processing_time, 2),
         )
 
+    except HTTPException:
+        raise
     except Exception as e:
         error_count += 1
         raise HTTPException(
