@@ -1,7 +1,6 @@
-import os
+import sys
 import time
 from datetime import datetime
-import sys
 
 import numpy as np
 import psutil
