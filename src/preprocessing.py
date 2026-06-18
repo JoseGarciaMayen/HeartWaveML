@@ -1,3 +1,5 @@
+import os
+
 import joblib
 import numpy as np
 import onnxruntime as ort
@@ -87,6 +89,7 @@ def extract_features_from_dataframe():
 
     X_concat = pd.concat([df, features], axis=1)
 
+    os.makedirs("data/interim", exist_ok=True)
     X_concat.to_csv("data/interim/mitbih_features.csv", index=False)
 
     features["class"] = df["class"]
@@ -159,6 +162,7 @@ def split_data(path="data/interim/mitbih_combined_records.csv"):
     test_df_processed["class"] = y_test.reset_index(drop=True)
 
     if path == "data/interim/mitbih_combined_records.csv":
+        os.makedirs("data/processed/base", exist_ok=True)
         train_df_processed.to_csv("data/processed/base/mitbih_train.csv", index=False)
         cv_df_processed.to_csv("data/processed/base/mitbih_cv.csv", index=False)
         test_df_processed.to_csv("data/processed/base/mitbih_test.csv", index=False)
@@ -169,6 +173,7 @@ def split_data(path="data/interim/mitbih_combined_records.csv"):
         print(" - data/processed/base/mitbih_test.csv")
 
     elif path == "data/interim/mitbih_features.csv":
+        os.makedirs("data/processed/feat", exist_ok=True)
         train_df_processed.to_csv("data/processed/feat/mitbih_train_features.csv", index=False)
         cv_df_processed.to_csv("data/processed/feat/mitbih_cv_features.csv", index=False)
         test_df_processed.to_csv("data/processed/feat/mitbih_test_features.csv", index=False)
@@ -179,6 +184,7 @@ def split_data(path="data/interim/mitbih_combined_records.csv"):
         print(" - data/processed/feat/mitbih_test_features.csv")
 
     elif path == "data/interim/mitbih_features_only.csv":
+        os.makedirs("data/processed/feat_only", exist_ok=True)
         train_df_processed.to_csv(
             "data/processed/feat_only/mitbih_train_features_only.csv", index=False
         )
@@ -225,6 +231,7 @@ def feature_extracting():
     X_test_features = pd.DataFrame(X_test_features_flattened)
     X_test_features["class"] = y_test.reset_index(drop=True)
 
+    os.makedirs("data/processed/cnn", exist_ok=True)
     X_train_features.to_csv("data/processed/cnn/mitbih_train_cnn.csv", index=False)
     X_cv_features.to_csv("data/processed/cnn/mitbih_cv_cnn.csv", index=False)
     X_test_features.to_csv("data/processed/cnn/mitbih_test_cnn.csv", index=False)

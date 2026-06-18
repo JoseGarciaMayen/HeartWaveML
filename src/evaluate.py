@@ -1,4 +1,5 @@
 import json
+import os
 
 import joblib
 import matplotlib.pyplot as plt
@@ -50,6 +51,7 @@ def evaluate_CNNMLP(model, X_test, y_test):
 
 
 def generate_comparison_report(XGB_metrics, CNNMLP_metrics, CONVXGB_metrics):
+    os.makedirs("src/saved_models/metrics", exist_ok=True)
     print("Comparación de métricas:")
     print("Modelo XGB:")
     print(f"Accuracy: {XGB_metrics[0]:.4f}")
