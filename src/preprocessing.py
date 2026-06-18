@@ -2,7 +2,6 @@ import joblib
 import numpy as np
 import onnxruntime as ort
 import pandas as pd
-from imblearn.over_sampling import SMOTE
 from scipy.signal import find_peaks
 from scipy.stats import kurtosis, skew
 
@@ -103,6 +102,7 @@ def split_data(path="data/interim/mitbih_combined_records.csv"):
     Splits the dataset into training, validation and testing sets.
     Then, applies SMOTE, filtering and scaling.
     """
+    from imblearn.over_sampling import SMOTE
     from sklearn.model_selection import train_test_split
     from sklearn.preprocessing import StandardScaler
 
