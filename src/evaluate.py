@@ -17,9 +17,8 @@ from sklearn.metrics import (
 
 
 def load_test_data(path=None):
-    X_test = pd.read_csv(path).drop("class", axis=1)
-    y_test = pd.read_csv(path)["class"]
-    return X_test, y_test
+    df = pd.read_csv(path)
+    return df.drop("class", axis=1), df["class"]
 
 
 def evaluate_XGB(model, X_test, y_test):
