@@ -1,6 +1,7 @@
 import os
 import time
 from datetime import datetime
+import sys
 
 import numpy as np
 import psutil
@@ -169,7 +170,7 @@ def health_check():
         "cpu_percent": psutil.cpu_percent(),
         "memory_percent": psutil.virtual_memory().percent,
         "disk_percent": psutil.disk_usage("/").percent,
-        "python_version": f"{os.sys.version_info.major}.{os.sys.version_info.minor}.{os.sys.version_info.micro}",
+        "python_version": f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}",
     }
 
     return HealthResponse(
