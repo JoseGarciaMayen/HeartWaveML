@@ -91,8 +91,18 @@ def get_class_weights():
 def notify_telegram(msg):
     """
     Sends a notification message to a specified Telegram chat.
+
+    Credentials are optional: if they are missing or the request fails, the
+    error is logged and swallowed so it never interrupts the caller (e.g. a
+    long training run).
     """
-    token = TELEGRAM_TOKEN
-    chat_id = CHAT_ID
-    url = f"https://api.telegram.org/bot{token}/sendMessage"
-    requests.post(url, data={"chat_id": chat_id, "text": msg})
+    if not TELEGRAM_TOKEN or not CHAT_ID:
+        print("Telegram notification skipped: TELEGRAM_TOKEN or CHAT_ID not set.")
+        return
+
+    url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
+    try:
+        response = requests.post(url, data={"chat_id": CHAT_ID, "text": msg}, timeout=10)
+        response.raise_for_status()
+    except requests.RequestException as e:
+        print(f"Telegram notification failed: {e}")
