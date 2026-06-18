@@ -42,7 +42,7 @@ def objective(trial):
         "reg_lambda": trial.suggest_float("reg_lambda", 0.01, 1.0, log=True),
         "gamma": trial.suggest_float("gamma", 0.01, 1.0, log=True),
         "objective": "multi:softprob",
-        "num_class": 5,
+        "num_class": 4,
         "random_state": 42,
     }
 
@@ -94,4 +94,4 @@ def objective(trial):
 
 if __name__ == "__main__":
     study = optuna.create_study(direction="maximize")
-    study.optimize(objective, n_trials=5000, show_progress_bar=True)
+    study.optimize(objective, n_trials=200, show_progress_bar=True)

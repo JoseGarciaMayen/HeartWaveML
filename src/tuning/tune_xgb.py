@@ -49,7 +49,7 @@ def objective(trial):
         "min_child_weight": trial.suggest_int("min_child_weight", 1, 10),
         "grow_policy": trial.suggest_categorical("grow_policy", ["depthwise", "lossguide"]),
         "objective": "multi:softprob",
-        "num_class": 5,
+        "num_class": 4,
         "random_state": 42,
     }
 
@@ -97,4 +97,4 @@ def objective(trial):
 
 if __name__ == "__main__":
     study = optuna.create_study(direction="maximize")
-    study.optimize(objective, n_trials=500, show_progress_bar=True)
+    study.optimize(objective, n_trials=200, show_progress_bar=True)

@@ -63,7 +63,7 @@ def generate_comparison_report(XGB_metrics, CNNMLP_metrics, CONVXGB_metrics):
     print(f"F2-score weighted: {XGB_metrics[6]:.4f}")
     disp = ConfusionMatrixDisplay(
         confusion_matrix=XGB_metrics[7],
-        display_labels=["Class 0", "Class 1", "Class 2", "Class 3", "Class 4"],
+        display_labels=["N", "S", "V", "F"],
     )
     disp.plot(cmap=plt.cm.Blues)
     plt.title("Confusion Matrix XGB")
@@ -78,7 +78,7 @@ def generate_comparison_report(XGB_metrics, CNNMLP_metrics, CONVXGB_metrics):
     print(f"F2-score weighted: {CNNMLP_metrics[6]:.4f}")
     disp = ConfusionMatrixDisplay(
         confusion_matrix=CNNMLP_metrics[7],
-        display_labels=["Class 0", "Class 1", "Class 2", "Class 3", "Class 4"],
+        display_labels=["N", "S", "V", "F"],
     )
     disp.plot(cmap=plt.cm.Blues)
     plt.title("Confusion Matrix CNNMLP")
@@ -93,7 +93,7 @@ def generate_comparison_report(XGB_metrics, CNNMLP_metrics, CONVXGB_metrics):
     print(f"F2-score weighted: {CONVXGB_metrics[6]:.4f}")
     disp = ConfusionMatrixDisplay(
         confusion_matrix=CONVXGB_metrics[7],
-        display_labels=["Class 0", "Class 1", "Class 2", "Class 3", "Class 4"],
+        display_labels=["N", "S", "V", "F"],
     )
     disp.plot(cmap=plt.cm.Blues)
     plt.title("Confusion Matrix CONVXGB")

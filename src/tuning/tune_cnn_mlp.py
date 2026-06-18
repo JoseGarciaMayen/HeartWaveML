@@ -53,7 +53,7 @@ X_cv_mlp = X_cv.iloc[:, 187:].values
 class_weights = get_class_weights()
 
 
-def create_model(trial, input_shape_cnn=(187, 1), input_shape_mlp=(36,), num_classes=5):
+def create_model(trial, input_shape_cnn=(187, 1), input_shape_mlp=(36,), num_classes=4):
     """
     Function to create the CNNMLP model with dynamic hyperparameters.
     """

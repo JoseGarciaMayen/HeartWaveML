@@ -43,7 +43,7 @@ class TrainerCNNMLP(TrainerBase):
             typed_best_params[k] = type(v)
         return typed_best_params
 
-    def create_model(self, input_shape_cnn=(187, 1), input_shape_mlp=(36,), num_classes=5):
+    def create_model(self, input_shape_cnn=(187, 1), input_shape_mlp=(36,), num_classes=4):
         """
         Function to create the CNNMLP model with dynamic hyperparameters.
         """

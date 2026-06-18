@@ -174,6 +174,7 @@ def split_data(path="data/interim/mitbih_combined_records.csv"):
     from sklearn.preprocessing import StandardScaler
 
     df = pd.read_csv(path)
+    df = df[df["class"] != 4].reset_index(drop=True)
     record = df["record"].astype(str)
     X = df.drop(["class", "record"], axis=1)
     y = df["class"]
@@ -181,13 +182,12 @@ def split_data(path="data/interim/mitbih_combined_records.csv"):
     train_mask = record.isin(TRAIN_RECORDS)
     cv_mask = record.isin(CV_RECORDS)
     test_mask = record.isin(DS2_RECORDS)
-    # Beats from records in neither list (the paced ones) are dropped.
 
     X_train, y_train = X[train_mask], y[train_mask]
     X_cv, y_cv = X[cv_mask], y[cv_mask]
     X_test, y_test = X[test_mask], y[test_mask]
 
-    sampling_strategy_dict = {1: 5000, 2: 5000, 3: 5000, 4: 5000}
+    sampling_strategy_dict = {1: 2500, 3: 2500}
 
     smote = SMOTE(sampling_strategy=sampling_strategy_dict, random_state=42, k_neighbors=5)
 
