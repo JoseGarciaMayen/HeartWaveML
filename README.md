@@ -22,6 +22,11 @@ This project implements an advanced machine learning pipeline for ***automated E
 
 ## Model results
 
+> ⚠️ **Note:** the table below was produced with an intra-patient (random)
+> split and is being regenerated under the patient-wise split described in
+> [Evaluation methodology](#evaluation-methodology). See
+> [`RETRAINING.md`](RETRAINING.md) to reproduce the updated numbers.
+
 <div align="center">
 
 | Metric | CONVXGB | XGB+feat | CNN+MLP |
@@ -33,6 +38,19 @@ This project implements an advanced machine learning pipeline for ***automated E
 | **F1-Score (macro)** | ***92.87%*** | 92.13% | 91.51% |
 
 </div>
+
+## Evaluation methodology
+
+The dataset is split **patient-wise** (the *inter-patient* paradigm): all
+heartbeats from a given record (patient) are assigned to a single set, so no
+patient appears in both train and test. This is enforced in `split_data`
+(`src/preprocessing.py`) with `GroupShuffleSplit` grouped by the `record`
+column.
+
+This avoids **inter-patient data leakage**, where a random per-beat split lets
+the model memorise patient-specific morphology and report optimistic metrics
+that do not generalise to unseen patients. Expect lower (but honest) scores
+than an intra-patient split.
 
 ## Features
 - Data ***preprocessing*** and ***feature extraction*** from raw ECG signals.
@@ -75,13 +93,20 @@ pip install -r requirements.txt
 This will fetch the models and datasets tracked with DVC and install dependencies (you probably will need a [Dagshub account](https://dagshub.com/))
 
 ### 3️⃣ Train models from scratch
-If you prefer to generate the dataset and train the models yourself:
+If you prefer to generate the dataset and train the models yourself, follow the
+full step-by-step runbook in [`RETRAINING.md`](RETRAINING.md) (data generation,
+patient-wise split, MLflow tuning/training and DVC versioning). In short:
 ```bash
-pip install -r requirements.txt
-python -m src.data.generate_data
-python -m src.tuning.tune_convxgb.py
+pip install -r requirements-dev.txt
+# 1. generate datasets with the patient-wise split
+python -c "from src.data.generate_data import generateData; generateData(data='no_feat')"
+python -m src.training.feature_extractor
+python -c "from src.data.generate_data import generateData; generateData(data=None)"
+# 2. start MLflow, then tune + train (see RETRAINING.md)
+python -m src.tuning.tune_convxgb
+python -m src.training.train_convxgb
 ```
-You can tune or train the model you want by changing `src.tuning.tune_convxgb.py` and use the api with
+Then serve the API with:
 ```bash
 python -m src.api
 ```
