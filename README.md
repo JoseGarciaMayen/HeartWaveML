@@ -24,8 +24,7 @@ This project implements an advanced machine learning pipeline for ***automated E
 
 > ⚠️ **Note:** the table below was produced with an intra-patient (random)
 > split and is being regenerated under the patient-wise split described in
-> [Evaluation methodology](#evaluation-methodology). See
-> [`RETRAINING.md`](RETRAINING.md) to reproduce the updated numbers.
+> [Evaluation methodology](#evaluation-methodology).
 
 <div align="center">
 
