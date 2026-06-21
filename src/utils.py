@@ -106,3 +106,36 @@ def notify_telegram(msg):
         response.raise_for_status()
     except requests.RequestException as e:
         print(f"Telegram notification failed: {e}")
+        
+
+def load_splits(train_path: str, cv_path: str):
+    """Load train/cv CSVs. Return X_train, y_train, X_cv, y_cv."""
+    train_df = pd.read_csv(train_path)
+    cv_df = pd.read_csv(cv_path)
+    return (
+        train_df.drop("class", axis=1),
+        train_df["class"],
+        cv_df.drop("class", axis=1),
+        cv_df["class"],
+    )
+
+
+def compute_and_log_metrics(model, X_train, y_train, X_cv, y_cv) -> dict:
+    """Compute accuracy, log_loss, and F1 on train/val sets and log to the active MLflow run."""
+    import mlflow
+    from sklearn.metrics import f1_score, log_loss
+
+    metrics = {
+        "accuracy": model.score(X_train, y_train),
+        "loss": log_loss(y_train, model.predict_proba(X_train)),
+        "val_accuracy": model.score(X_cv, y_cv),
+        "val_loss": log_loss(y_cv, model.predict_proba(X_cv)),
+    }
+    y_cv_pred = model.predict(X_cv)
+    metrics["val_f1_macro"] = f1_score(y_cv, y_cv_pred, average="macro")
+    metrics["val_f1_weighted"] = f1_score(y_cv, y_cv_pred, average="weighted")
+
+    for k, v in metrics.items():
+        mlflow.log_metric(k, v)
+
+    return metrics
