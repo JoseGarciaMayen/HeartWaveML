@@ -66,17 +66,35 @@ def run(model_key: str):
     train(model_key)
 
 
+def evaluate(model_key: str):
+    import src.evaluate as ev
+
+    print(f"\n--- Evaluating {model_key} ---")
+    if model_key == "all":
+        ev.evaluate_all()
+    else:
+        if model_key not in ev.EVAL_CONFIG:
+            raise SystemExit(
+                f"'{model_key}' not in EVAL_CONFIG. Choose from: {', '.join(ev.EVAL_CONFIG)}"
+            )
+        ev.evaluate_model(model_key)
+
+
 def main():
     parser = argparse.ArgumentParser(
         prog="pipeline",
-        description="Tune and train ECG classification models.",
+        description="Tune, train, and evaluate ECG classification models.",
     )
-    parser.add_argument("command", choices=["tune", "train", "run"])
+    parser.add_argument("command", choices=["tune", "train", "run", "evaluate"])
     parser.add_argument(
         "model",
         help=f"Model to use: {', '.join(MODELS)} or 'all'",
     )
     args = parser.parse_args()
+
+    if args.command == "evaluate":
+        evaluate(args.model)
+        return
 
     if args.model != "all" and args.model not in MODELS:
         parser.error(f"Unknown model '{args.model}'. Choose from: {', '.join(MODELS)} or 'all'")
