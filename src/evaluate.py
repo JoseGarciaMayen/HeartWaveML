@@ -51,6 +51,11 @@ EVAL_CONFIG = {
         "test_data": DATA["feat_test"],
         "predict": lambda model, X: model.predict(X),
     },
+    "ensemble": {
+        "model_path": "src/saved_models/modelEnsemble.joblib",
+        "test_data": DATA["feat_test"],
+        "predict": lambda model, X: model.predict(X),
+    },
 }
 
 
