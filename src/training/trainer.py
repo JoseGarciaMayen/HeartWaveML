@@ -69,6 +69,70 @@ class TrainerBase:
         raise NotImplementedError("This method should be implemented in subclasses.")
 
 
+XGB_PARAM_TYPES = {
+    "max_depth": int,
+    "n_estimators": int,
+    "num_class": int,
+    "random_state": int,
+    "min_child_weight": int,
+    "learning_rate": float,
+    "subsample": float,
+    "colsample_bytree": float,
+    "colsample_bynode": float,
+    "colsample_bylevel": float,
+    "gamma": float,
+    "reg_alpha": float,
+    "reg_lambda": float,
+}
+
+
+class TrainerTreeBased(TrainerBase):
+    """Base for tree-based tabular models (XGB, ExtraTrees, LightGBM, CatBoost).
+    Subclasses must set PARAM_TYPES and implement create_model()."""
+
+    PARAM_TYPES: dict = {}
+    SUPPORTS_EVAL_SET: bool = True  # set to False for sklearn models (ExtraTrees, etc.)
+
+    def get_typed_params(self, best_params: dict) -> dict:
+        return {k: self.PARAM_TYPES.get(k, str)(v) for k, v in best_params.items()}
+
+    def _log_mlflow_model(self, model, input_example, signature):
+        mlflow.xgboost.log_model(
+            model, self.model_name, registered_model_name=self.model_name, signature=signature
+        )
+
+    def mlflow_start(
+        self, model, X_train, y_train, X_cv, y_cv, params, sample_weights=None, extra_params=None
+    ):
+        from mlflow.models import infer_signature
+
+        from src.utils import compute_and_log_metrics, notify_telegram
+
+        with mlflow.start_run(nested=True):
+            mlflow.log_params(params)
+            if extra_params:
+                mlflow.log_params(extra_params)
+
+            fit_kwargs = {}
+            if self.SUPPORTS_EVAL_SET:
+                fit_kwargs["eval_set"] = [(X_cv, y_cv)]
+                fit_kwargs["verbose"] = False
+            if sample_weights is not None:
+                fit_kwargs["sample_weight"] = sample_weights
+            model.fit(X_train, y_train, **fit_kwargs)
+
+            metrics = compute_and_log_metrics(model, X_train, y_train, X_cv, y_cv)
+
+            input_example = X_train.iloc[:5]
+            signature = infer_signature(input_example, model.predict(input_example))
+            self._log_mlflow_model(model, input_example, signature)
+            self.save_model(model, self.model_name)
+            notify_telegram(
+                f"{self.model_name} - val_f1_macro: {metrics['val_f1_macro']:.4f}, val_f1_weighted: {metrics['val_f1_weighted']:.4f}"
+            )
+            return metrics["val_f1_macro"]
+
+
 if __name__ == "__main__":
     trainer = TrainerBase("modelXGB", "ECG_XGB")
     print(trainer.mlflow_tracking_uri)
