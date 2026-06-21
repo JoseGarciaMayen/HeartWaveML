@@ -36,7 +36,9 @@ class TrainerCatBoost(TrainerTreeBased):
         X_train, y_train, X_cv, y_cv, _ = self.load_data(DATA["feat_train"], DATA["feat_cv"])
         sample_weights = compute_sample_weight("balanced", y_train)
         model, params = self.create_model()
-        self.mlflow_start(model, X_train, y_train, X_cv, y_cv, params, sample_weights=sample_weights)
+        self.mlflow_start(
+            model, X_train, y_train, X_cv, y_cv, params, sample_weights=sample_weights
+        )
 
 
 if __name__ == "__main__":

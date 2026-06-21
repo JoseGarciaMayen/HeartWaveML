@@ -30,7 +30,9 @@ class TunerCatBoost(TunerBase):
             model = CatBoostClassifier(**params)
             model.fit(self.X_train, self.y_train, sample_weight=self.sample_weights)
             metrics = self.log_metrics(model, self.X_train, self.y_train, self.X_cv, self.y_cv)
-            notify_telegram(f"CatBoost trial - f1: {metrics['val_f1_macro']:.4f}, f1_w: {metrics['val_f1_weighted']:.4f}")
+            notify_telegram(
+                f"CatBoost trial - f1: {metrics['val_f1_macro']:.4f}, f1_w: {metrics['val_f1_weighted']:.4f}"
+            )
             return metrics["val_f1_macro"]
 
 
