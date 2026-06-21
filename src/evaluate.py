@@ -111,7 +111,17 @@ def evaluate_model(key: str) -> dict:
 
 
 def evaluate_all() -> dict:
-    results = {key: evaluate_model(key) for key in EVAL_CONFIG}
+    results = {}
+    for key in EVAL_CONFIG:
+        model_path = EVAL_CONFIG[key]["model_path"]
+        if not os.path.exists(model_path):
+            print(f"\nSkipping {key}: model artifact not found at {model_path}")
+            continue
+        results[key] = evaluate_model(key)
+
+    if not results:
+        raise SystemExit("No model artifacts found to evaluate. Train at least one model first")
+
     summary = {
         k: {m: f"{v:.4f}" for m, v in metrics.items() if m != "cm"}
         for k, metrics in results.items()
