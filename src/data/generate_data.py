@@ -52,9 +52,18 @@ def generateData(data=None, record_numbers=None, window_size=187):
         extract_features_from_dataframe()
         split_data("data/interim/mitbih_features.csv")
         split_data("data/interim/mitbih_features_only.csv")
+    elif data == "deterministic":
+        # Everything that does not need the trained CNN feature extractor:
+        split_data("data/interim/mitbih_combined_records.csv")
+        extract_features_from_dataframe()
+        split_data("data/interim/mitbih_features.csv")
+        split_data("data/interim/mitbih_features_only.csv")
+    elif data == "cnn":
+        # Only the CNN feature extraction step (requires feature_extractor.keras).
+        feature_extracting()
     elif data == "no_feat":
         split_data("data/interim/mitbih_combined_records.csv")
-    elif data == "cnn":
+    elif data == "cnn_full":
         split_data("data/interim/mitbih_combined_records.csv")
         feature_extracting()
     elif data == "feat":
@@ -66,4 +75,19 @@ def generateData(data=None, record_numbers=None, window_size=187):
 
 
 if __name__ == "__main__":
-    generateData(data="no_feat")  # Options: None, , "no_feat", "cnn", "feat", "feat_only"
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Generate HeartWaveML datasets.")
+    parser.add_argument(
+        "--mode",
+        default="deterministic",
+        choices=["deterministic", "cnn", "no_feat", "cnn_full", "feat", "feat_only", "all"],
+        help=(
+            "deterministic: base/feat/feat_only (no CNN). "
+            "cnn: only the CNN feature extraction (needs feature_extractor.keras). "
+            "all: full pipeline. Others are kept for manual use."
+        ),
+    )
+    args = parser.parse_args()
+
+    generateData(data=None if args.mode == "all" else args.mode)

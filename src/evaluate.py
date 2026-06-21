@@ -67,7 +67,16 @@ def _load_model(model_path: str):
     return joblib.load(model_path)
 
 
+CLASS_NAMES = {0: "N", 1: "S", 2: "V", 3: "F", 4: "Q"}
+
+_NON_SCALAR_KEYS = ("cm", "labels")
+
+
 def _compute_metrics(y_test, y_pred) -> dict:
+    # Derive labels from the classes actually present so the confusion matrix and
+    # its display labels always line up, even if a model predicts a class that is
+    # no longer in the test set (e.g. an older 5-class model on 4-class data).
+    labels = sorted(set(int(c) for c in y_test) | set(int(c) for c in y_pred))
     return {
         "accuracy": accuracy_score(y_test, y_pred),
         "precision": precision_score(y_test, y_pred, average="weighted"),
@@ -76,14 +85,15 @@ def _compute_metrics(y_test, y_pred) -> dict:
         "f1_weighted": f1_score(y_test, y_pred, average="weighted"),
         "f2_macro": fbeta_score(y_test, y_pred, beta=2, average="macro"),
         "f2_weighted": fbeta_score(y_test, y_pred, beta=2, average="weighted"),
-        "cm": confusion_matrix(y_test, y_pred, normalize="true"),
+        "labels": labels,
+        "cm": confusion_matrix(y_test, y_pred, labels=labels, normalize="true"),
     }
 
 
 def _print_metrics(name: str, metrics: dict):
     print(f"\nModelo {name}:")
     for key, val in metrics.items():
-        if key != "cm":
+        if key not in _NON_SCALAR_KEYS:
             print(f"  {key}: {val:.4f}")
 
 
@@ -91,7 +101,7 @@ def _save_artifacts(name: str, metrics: dict):
     os.makedirs("src/saved_models/metrics", exist_ok=True)
     disp = ConfusionMatrixDisplay(
         confusion_matrix=metrics["cm"],
-        display_labels=["N", "S", "V", "F"],
+        display_labels=[CLASS_NAMES.get(c, str(c)) for c in metrics["labels"]],
     )
     disp.plot(cmap=plt.cm.Blues)
     plt.title(f"Confusion Matrix {name}")
@@ -123,7 +133,7 @@ def evaluate_all() -> dict:
         raise SystemExit("No model artifacts found to evaluate. Train at least one model first")
 
     summary = {
-        k: {m: f"{v:.4f}" for m, v in metrics.items() if m != "cm"}
+        k: {m: f"{v:.4f}" for m, v in metrics.items() if m not in _NON_SCALAR_KEYS}
         for k, metrics in results.items()
     }
     with open("src/saved_models/metrics/metrics.json", "w") as f:

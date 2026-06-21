@@ -1,5 +1,6 @@
 import os
 
+import numpy as np
 import pandas as pd
 import tensorflow as tf
 import tf2onnx
@@ -12,6 +13,9 @@ from tensorflow.keras.layers import (  # type: ignore
     MaxPooling1D,
 )
 from tensorflow.keras.models import Model  # type: ignore
+
+np.random.seed(42)
+tf.random.set_seed(42)
 
 
 def create_model_cnn(

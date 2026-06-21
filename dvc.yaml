@@ -5,14 +5,42 @@ stages:
       - src/data/download_dataset.py
     outs:
       - data/raw/mit-bih-arrhythmia-database-1.0.0
+
   preprocess:
-    cmd: python -m src.data.generate_data
+    cmd: python -m src.data.generate_data --mode deterministic
     deps:
       - data/raw/mit-bih-arrhythmia-database-1.0.0
       - src/data/generate_data.py
-      - src/preprocessing.py
       - src/data/features.py
       - src/data/splitter.py
+      - src/utils.py
+    outs:
+      - data/interim/mitbih_combined_records.csv
+      - data/interim/mitbih_features.csv
+      - data/interim/mitbih_features_only.csv
+      - data/processed/base
+      - data/processed/feat
+      - data/processed/feat_only
+      - src/saved_models/scaler.joblib
+      - src/saved_models/scaler_convxgb.joblib
+
+  feature_extractor:
+    cmd: python -m src.training.feature_extractor
+    deps:
+      - data/processed/base
+      - src/training/feature_extractor.py
+    outs:
+      - src/saved_models/feature_extractor.keras
+      - src/saved_models/feature_extractor.onnx
+
+  cnn:
+    cmd: python -m src.data.generate_data --mode cnn
+    deps:
+      - data/processed/base
+      - src/saved_models/feature_extractor.keras
+      - src/data/splitter.py
+    outs:
+      - data/processed/cnn
 
   evaluate:
     cmd: python -m src.evaluate
