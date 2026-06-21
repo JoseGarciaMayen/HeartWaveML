@@ -3,7 +3,6 @@ import os
 import joblib
 import numpy as np
 import pandas as pd
-from imblearn.over_sampling import SMOTE
 from sklearn.preprocessing import StandardScaler
 
 from src.utils import apply_filter, get_filter_coeffs
@@ -73,6 +72,7 @@ def split_data(path="data/interim/mitbih_combined_records.csv"):
     the test set is DS2, so no patient appears in more than one set. This is the
     standard inter-patient paradigm and avoids inter-patient data leakage.
     """
+    from imblearn.over_sampling import SMOTE
 
     df = pd.read_csv(path)
     df = df[df["class"] != 4].reset_index(drop=True)
