@@ -19,6 +19,18 @@ MODELS = {
             )
         },
     },
+    "extratrees": {
+        "tuner": ("src.tuning.tune_extratrees", "TunerExtraTrees"),
+        "trainer": ("src.training.train_extratrees", "TrainerExtraTrees"),
+    },
+    "lgbm": {
+        "tuner": ("src.tuning.tune_lgbm", "TunerLGBM"),
+        "trainer": ("src.training.train_lgbm", "TrainerLGBM"),
+    },
+    "catboost": {
+        "tuner": ("src.tuning.tune_catboost", "TunerCatBoost"),
+        "trainer": ("src.training.train_catboost", "TrainerCatBoost"),
+    },
 }
 
 
