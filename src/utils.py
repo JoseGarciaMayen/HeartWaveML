@@ -106,7 +106,7 @@ def notify_telegram(msg):
         response.raise_for_status()
     except requests.RequestException as e:
         print(f"Telegram notification failed: {e}")
-        
+
 
 def load_splits(train_path: str, cv_path: str):
     """Load train/cv CSVs. Return X_train, y_train, X_cv, y_cv."""
