@@ -15,6 +15,8 @@ onnx==1.12.0
 uvicorn==0.35.0
 wfdb==4.3.0
 xgboost==3.0.4
+lightgbm==4.5.0
+catboost==1.2.7
 python-dotenv==1.1.1
 pyyaml>=6.0
 imbalanced-learn==0.14.2
