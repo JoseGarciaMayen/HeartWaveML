@@ -45,7 +45,9 @@ def _load_class(module_path: str, class_name: str):
 def tune(model_key: str):
     cfg = MODELS[model_key]
     if "tuner" not in cfg:
-        raise SystemExit(f"'{model_key}' has no tuner. Configure its settings in config.yaml instead.")
+        raise SystemExit(
+            f"'{model_key}' has no tuner. Configure its settings in config.yaml instead."
+        )
     cls = _load_class(*cfg["tuner"])
     kwargs = cfg["tune_kwargs"]() if "tune_kwargs" in cfg else {}
     print(f"\n--- Tuning {model_key} ---")
