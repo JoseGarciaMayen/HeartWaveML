@@ -22,9 +22,7 @@ class EnsembleModel:
         self.weights = weights
 
     def predict_proba(self, X):
-        return np.average(
-            [m.predict_proba(X) for m in self.models], weights=self.weights, axis=0
-        )
+        return np.average([m.predict_proba(X) for m in self.models], weights=self.weights, axis=0)
 
     def predict(self, X):
         return np.argmax(self.predict_proba(X), axis=1)
@@ -41,16 +39,14 @@ class TrainerEnsemble(TrainerBase):
         model_keys = ENSEMBLE["models"]
         weights = [ENSEMBLE["weights"][k] for k in model_keys]
 
-        models = [
-            joblib.load(f"src/saved_models/{MODEL_FILES[k]}") for k in model_keys
-        ]
+        models = [joblib.load(f"src/saved_models/{MODEL_FILES[k]}") for k in model_keys]
         ensemble = EnsembleModel(models, weights)
 
         X_train, y_train, X_cv, y_cv, _ = self.load_data(DATA["feat_train"], DATA["feat_cv"])
 
         with mlflow.start_run():
             mlflow.log_param("models", model_keys)
-            mlflow.log_param("weights", dict(zip(model_keys, weights)))
+            mlflow.log_param("weights", dict(zip(model_keys, weights, strict=True)))
             metrics = compute_and_log_metrics(ensemble, X_train, y_train, X_cv, y_cv)
             joblib.dump(
                 {"models": model_keys, "weights": weights},
