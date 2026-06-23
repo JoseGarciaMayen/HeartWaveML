@@ -35,7 +35,7 @@ jobs:
         run: dvc pull -f -r origin src/saved_models/modelCONVXGB.joblib src/saved_models/scaler_convxgb.joblib src/saved_models/feature_extractor.onnx
 
       - name: Install test dependencies
-        run: pip install -r requirements_api.txt pytest httpx ruff
+        run: pip install -r requirements_api.txt pytest httpx ruff pyyaml
 
       - name: Lint with ruff
         run: ruff check .

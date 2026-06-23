@@ -2,7 +2,6 @@ import json
 import os
 
 import joblib
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from sklearn.metrics import (
@@ -78,9 +77,6 @@ _NON_SCALAR_KEYS = ("cm", "labels")
 
 
 def _compute_metrics(y_test, y_pred) -> dict:
-    # Derive labels from the classes actually present so the confusion matrix and
-    # its display labels always line up, even if a model predicts a class that is
-    # no longer in the test set (e.g. an older 5-class model on 4-class data).
     labels = sorted(set(int(c) for c in y_test) | set(int(c) for c in y_pred))
     return {
         "accuracy": accuracy_score(y_test, y_pred),
@@ -103,6 +99,8 @@ def _print_metrics(name: str, metrics: dict):
 
 
 def _save_artifacts(name: str, metrics: dict):
+    import matplotlib.pyplot as plt
+
     os.makedirs("src/saved_models/metrics", exist_ok=True)
     disp = ConfusionMatrixDisplay(
         confusion_matrix=metrics["cm"],
