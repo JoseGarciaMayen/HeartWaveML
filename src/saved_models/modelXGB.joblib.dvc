@@ -1,5 +1,5 @@
 outs:
-- md5: 48225871f4772b33d33f9a89d54f1942
-  size: 19189885
+- md5: 2989a62f6af820d9d1a5ee85b052603a
+  size: 26241049
   hash: md5
   path: modelXGB.joblib

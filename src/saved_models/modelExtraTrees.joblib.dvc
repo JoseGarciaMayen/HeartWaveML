@@ -1,0 +1,5 @@
+outs:
+- md5: 8b89f9a82bc06cf0abc4674a759a82b6
+  size: 284203609
+  hash: md5
+  path: modelExtraTrees.joblib

@@ -1,5 +1,5 @@
 outs:
-- md5: f4ae72514adaf80bcc6876cf34b23f38
-  size: 7873949
+- md5: 0265bfdc09f18b17cbd01dbf6154bc0b
+  size: 2886886
   hash: md5
   path: modelCONVXGB.joblib

@@ -9,7 +9,8 @@ mlruns/
 mlartifacts/
 .ipynb_checkpoints/
 HeartWaveML.ipynb
-saved_models/
+src/saved_models/*
+!src/saved_models/*.dvc
 __pycache__/
 *.pyc
 *.pyo
@@ -25,4 +26,5 @@ __pycache__/
 .env
 !*.dvc
 .venv
-!
+catboost_info/
+mlflow.log

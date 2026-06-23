@@ -1,0 +1,5 @@
+outs:
+- md5: ea4437013997a1c0f746aef561b89d5a
+  size: 34674846
+  hash: md5
+  path: modelCatBoost.joblib
