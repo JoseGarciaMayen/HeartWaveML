@@ -28,3 +28,79 @@ ensemble:
     extratrees: 0.25
     lgbm:       0.25
     catboost:   0.25
+
+# Training params for the CNN feature extractor (not tuned by Optuna)
+feature_extractor:
+  epochs: 50
+  batch_size: 64
+
+# Optuna tuning config. n_trials is the quickest knob to reduce run time.
+# search_space: [min, max] for each hyperparameter.
+tuning:
+  xgb:
+    n_trials: 200
+    search_space:
+      max_depth:          [3, 10]
+      learning_rate:      [0.005, 0.5]
+      n_estimators:       [100, 1000]
+      subsample:          [0.6, 1.0]
+      colsample_bytree:   [0.6, 1.0]
+      colsample_bynode:   [0.6, 1.0]
+      colsample_bylevel:  [0.6, 1.0]
+      reg_alpha:          [0.01, 1.0]
+      reg_lambda:         [0.01, 1.0]
+      gamma:              [0.01, 1.0]
+      min_child_weight:   [1, 10]
+
+  convxgb:
+    n_trials: 200
+    search_space:
+      max_depth:          [3, 10]
+      learning_rate:      [0.01, 1.0]
+      n_estimators:       [50, 1000]
+      subsample:          [0.6, 1.0]
+      colsample_bytree:   [0.6, 1.0]
+      colsample_bynode:   [0.6, 1.0]
+      colsample_bylevel:  [0.6, 1.0]
+      reg_alpha:          [0.01, 1.0]
+      reg_lambda:         [0.01, 1.0]
+      gamma:              [0.01, 1.0]
+
+  extratrees:
+    n_trials: 100
+    search_space:
+      n_estimators:       [100, 1000]
+      max_depth:          [3, 30]
+      min_samples_split:  [2, 20]
+      min_samples_leaf:   [1, 10]
+
+  lgbm:
+    n_trials: 150
+    search_space:
+      n_estimators:       [100, 1000]
+      learning_rate:      [0.005, 0.5]
+      max_depth:          [3, 15]
+      num_leaves:         [20, 300]
+      subsample:          [0.6, 1.0]
+      colsample_bytree:   [0.6, 1.0]
+      reg_alpha:          [0.01, 1.0]
+      reg_lambda:         [0.01, 1.0]
+
+  catboost:
+    n_trials: 100
+    search_space:
+      iterations:         [100, 1000]
+      learning_rate:      [0.01, 0.5]
+      depth:              [3, 10]
+      l2_leaf_reg:        [1.0, 10.0]
+      border_count:       [32, 255]
+
+  cnn_mlp:
+    n_trials: 50
+    epochs:   [25, 50, 75]    # Optuna picks among these options
+    patience: 10              # EarlyStopping patience
+    search_space:
+      l2:            [0.0001, 0.0002]
+      dropout:       [0.0, 0.4]
+      learning_rate: [0.0001, 0.001]
+      gamma:         [0.5, 5.0]

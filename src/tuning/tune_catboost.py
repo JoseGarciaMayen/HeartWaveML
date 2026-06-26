@@ -2,26 +2,31 @@ import mlflow
 from catboost import CatBoostClassifier
 from sklearn.utils.class_weight import compute_sample_weight
 
-from src.config import DATA
+from src.config import DATA, TUNING
 from src.tuning.tuner import TunerBase
 from src.utils import notify_telegram
 
 
 class TunerCatBoost(TunerBase):
     def __init__(self):
-        super().__init__("ECG_CatBoost_tuning", n_trials=100)
+        cfg = TUNING["catboost"]
+        super().__init__("ECG_CatBoost_tuning", n_trials=cfg["n_trials"])
         self.X_train, self.y_train, self.X_cv, self.y_cv = self.load_data(
             DATA["feat_train"], DATA["feat_cv"]
         )
         self.sample_weights = compute_sample_weight("balanced", self.y_train)
+        self.search_space = cfg["search_space"]
 
     def objective(self, trial) -> float:
+        search_space = self.search_space
         params = {
-            "iterations": trial.suggest_int("iterations", 100, 1000),
-            "learning_rate": trial.suggest_float("learning_rate", 0.01, 0.5, log=True),
-            "depth": trial.suggest_int("depth", 3, 10),
-            "l2_leaf_reg": trial.suggest_float("l2_leaf_reg", 1.0, 10.0),
-            "border_count": trial.suggest_int("border_count", 32, 255),
+            "iterations": trial.suggest_int("iterations", *search_space["iterations"]),
+            "learning_rate": trial.suggest_float(
+                "learning_rate", *search_space["learning_rate"], log=True
+            ),
+            "depth": trial.suggest_int("depth", *search_space["depth"]),
+            "l2_leaf_reg": trial.suggest_float("l2_leaf_reg", *search_space["l2_leaf_reg"]),
+            "border_count": trial.suggest_int("border_count", *search_space["border_count"]),
             "verbose": 0,
             "random_state": 42,
         }

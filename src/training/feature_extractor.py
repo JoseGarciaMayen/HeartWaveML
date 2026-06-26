@@ -14,7 +14,7 @@ from tensorflow.keras.layers import (  # type: ignore
 )
 from tensorflow.keras.models import Model  # type: ignore
 
-from src.config import CNN_ARCH, DATA
+from src.config import CNN_ARCH, DATA, FEATURE_EXTRACTOR
 
 np.random.seed(42)
 tf.random.set_seed(42)
@@ -56,7 +56,14 @@ def create_model_cnn(
         metrics=["accuracy"],
     )
 
-    model.fit(X_train, y_train, epochs=50, batch_size=64, validation_data=(X_cv, y_cv), verbose=1)
+    model.fit(
+        X_train,
+        y_train,
+        epochs=FEATURE_EXTRACTOR["epochs"],
+        batch_size=FEATURE_EXTRACTOR["batch_size"],
+        validation_data=(X_cv, y_cv),
+        verbose=1,
+    )
 
     feature_extractor = Model(inputs=model.input, outputs=features)
 

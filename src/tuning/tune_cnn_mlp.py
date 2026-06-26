@@ -18,14 +18,18 @@ from tensorflow.keras.layers import (  # type: ignore
 )
 from tensorflow.keras.models import Model  # type: ignore
 
-from src.config import DATA
+from src.config import DATA, TUNING
 from src.tuning.tuner import TunerBase
 from src.utils import get_class_weights, notify_telegram
 
 
 class TunerCNNMLP(TunerBase):
     def __init__(self):
-        super().__init__("ECG_CNNMLP_tuning", n_trials=50)
+        cfg = TUNING["cnn_mlp"]
+        super().__init__("ECG_CNNMLP_tuning", n_trials=cfg["n_trials"])
+        self.search_space = cfg["search_space"]
+        self._epochs_choices = cfg["epochs"]
+        self._patience = cfg["patience"]
         self.X_train, self.y_train, self.X_cv, self.y_cv = self.load_data(
             DATA["feat_train"], DATA["feat_cv"]
         )
@@ -38,10 +42,13 @@ class TunerCNNMLP(TunerBase):
         self.class_weights = get_class_weights(self.y_train)
 
     def _build_model(self, trial, input_shape_cnn=(187, 1), input_shape_mlp=(36,), num_classes=3):
-        l2 = trial.suggest_float("l2", 0.0001, 0.0002, log=True)
-        dropout = trial.suggest_float("dropout", 0, 0.4)
-        learning_rate = trial.suggest_float("learning_rate", 1e-4, 1e-3, log=True)
-        gamma = trial.suggest_float("gamma", 0.5, 5.0)
+        search_space = self.search_space
+        l2 = trial.suggest_float("l2", *search_space["l2"], log=True)
+        dropout = trial.suggest_float("dropout", *search_space["dropout"])
+        learning_rate = trial.suggest_float(
+            "learning_rate", *search_space["learning_rate"], log=True
+        )
+        gamma = trial.suggest_float("gamma", *search_space["gamma"])
         filters = trial.suggest_categorical("filters", [64])
         filter_multiplier = trial.suggest_categorical("filter_multiplier", [2])
         units_mlp1 = trial.suggest_categorical("units_mlp1", [512])
@@ -109,14 +116,14 @@ class TunerCNNMLP(TunerBase):
     def objective(self, trial) -> float:
         mlflow.tensorflow.autolog(log_models=False, log_datasets=False, silent=True)
         with mlflow.start_run(nested=True):
-            epochs = trial.suggest_categorical("epochs", [25, 50, 75])
+            epochs = trial.suggest_categorical("epochs", self._epochs_choices)
             mlflow.log_param("epochs", epochs)
 
             model = self._build_model(
                 trial, input_shape_mlp=(self.n_mlp_features,), num_classes=self.num_classes
             )
             early_stopping = tf.keras.callbacks.EarlyStopping(
-                monitor="val_loss", patience=10, restore_best_weights=True
+                monitor="val_loss", patience=self._patience, restore_best_weights=True
             )
             model.fit(
                 [self.X_train_cnn, self.X_train_mlp],

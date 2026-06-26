@@ -14,3 +14,5 @@ MLFLOW_URI = f"http://{os.getenv('IP', '127.0.0.1')}:5000"
 DATA = _cfg["data"]
 CNN_ARCH = _cfg["cnn_arch"]
 ENSEMBLE = _cfg["ensemble"]
+TUNING = _cfg["tuning"]
+FEATURE_EXTRACTOR = _cfg["feature_extractor"]
