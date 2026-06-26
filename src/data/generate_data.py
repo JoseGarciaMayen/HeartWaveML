@@ -26,7 +26,8 @@ def generateData(data=None, record_numbers=None, window_size=187):
             ann = wfdb.rdann(f"data/raw/mit-bih-arrhythmia-database-1.0.0/{record_number}", "atr")
             class_mapping = get_class_mapping()
 
-            for i in range(len(ann.sample)):
+            n_ann = len(ann.sample)
+            for i in range(n_ann):
                 symbol = ann.symbol[i]
                 if symbol in class_mapping:
                     center = ann.sample[i]
@@ -38,9 +39,14 @@ def generateData(data=None, record_numbers=None, window_size=187):
                         beat_samples = record.p_signal[start:end, 0].tolist()
                         beat_samples.append(class_mapping[symbol])
                         beat_samples.append(record_number)
+                        beat_samples.append(int(center))
                         rows.append(beat_samples)
 
-        column_names = [f"sample_{i}" for i in range(window_size)] + ["class", "record"]
+        column_names = [f"sample_{i}" for i in range(window_size)] + [
+            "class",
+            "record",
+            "beat_center",
+        ]
 
         df = pd.DataFrame(rows, columns=column_names)
 

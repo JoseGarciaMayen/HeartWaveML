@@ -64,6 +64,28 @@ def extract_features_from_beat(beat_signal, fs=360):
     return features
 
 
+def _compute_rr_features(df):
+    """
+    Computes RR interval features from beat_center positions grouped by record.
+    Returns a DataFrame with rr_pre, rr_post, rr_ratio aligned to df's index.
+    """
+    rr = pd.DataFrame(index=df.index, columns=["rr_pre", "rr_post", "rr_ratio"], dtype=float)
+    for _, group in df.groupby("record", sort=False):
+        centers = group["beat_center"].values
+        n = len(centers)
+        pre = np.empty(n)
+        post = np.empty(n)
+        pre[1:] = (centers[1:] - centers[:-1]) / 360.0
+        post[:-1] = (centers[1:] - centers[:-1]) / 360.0
+        pre[0] = post[0] if n > 1 else 0.0
+        post[-1] = pre[-1] if n > 1 else 0.0
+        ratio = pre / (post + 1e-6)
+        rr.loc[group.index, "rr_pre"] = pre
+        rr.loc[group.index, "rr_post"] = post
+        rr.loc[group.index, "rr_ratio"] = ratio
+    return rr
+
+
 def extract_features_from_dataframe():
     """
     Extracts features from a DataFrame of heartbeat signals.
@@ -71,7 +93,8 @@ def extract_features_from_dataframe():
     features = []
 
     df = pd.read_csv("data/interim/mitbih_combined_records.csv")
-    X = df.drop(["class", "record"], axis=1)
+    signal_cols = [c for c in df.columns if c.startswith("sample_")]
+    X = df[signal_cols]
 
     print("Extracting features from dataset...")
     for i in range(len(X)):
@@ -81,16 +104,29 @@ def extract_features_from_dataframe():
             print(f"  Processed {i} of {len(X)} training heartbeats.")
 
     features = pd.DataFrame(features)
+
+    if "beat_center" in df.columns:
+        rr = _compute_rr_features(df)
+        features = pd.concat([features, rr.reset_index(drop=True)], axis=1)
+
     print("Features shape:", features.shape)
 
-    X_concat = pd.concat([df, features], axis=1)
+    X_concat = pd.concat(
+        [
+            df[signal_cols].reset_index(drop=True),
+            features,
+            df[["class", "record"]].reset_index(drop=True),
+        ],
+        axis=1,
+    )
 
     os.makedirs("data/interim", exist_ok=True)
     X_concat.to_csv("data/interim/mitbih_features.csv", index=False)
 
-    features["class"] = df["class"]
-    features["record"] = df["record"]
-    features.to_csv("data/interim/mitbih_features_only.csv", index=False)
+    feat_only = features.copy()
+    feat_only["class"] = df["class"].reset_index(drop=True)
+    feat_only["record"] = df["record"].reset_index(drop=True)
+    feat_only.to_csv("data/interim/mitbih_features_only.csv", index=False)
 
     print("Saved in the following archives:")
     print(" - data/interim/mitbih_features.csv")

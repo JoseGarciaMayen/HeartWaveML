@@ -138,7 +138,8 @@ class TrainerCNNMLP(TrainerBase):
         X_train, y_train, X_cv, y_cv, class_weights = self.load_data(
             DATA["feat_train"], DATA["feat_cv"]
         )
-        model = self.create_model()
+        n_mlp_features = X_train.shape[1] - 187
+        model = self.create_model(input_shape_mlp=(n_mlp_features,))
         val_f1 = self.mlflow_start(model, X_train, y_train, X_cv, y_cv, class_weights)
         return val_f1
 
