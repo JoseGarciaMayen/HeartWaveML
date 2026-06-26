@@ -87,9 +87,7 @@ class TrainerCNNMLP(TrainerBase):
 
         model = Model(inputs=[input_cnn, input_mlp], outputs=output)
         model.compile(
-            loss=tf.keras.losses.SparseCategoricalFocalCrossentropy(
-                from_logits=True, gamma=p.get("gamma", 2.0)
-            ),
+            loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
             optimizer=tf.keras.optimizers.Adam(p["learning_rate"]),
             metrics=["accuracy"],
         )

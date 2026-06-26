@@ -107,7 +107,7 @@ class TunerCNNMLP(TunerBase):
 
         model = Model(inputs=[input_cnn, input_mlp], outputs=output)
         model.compile(
-            loss=tf.keras.losses.SparseCategoricalFocalCrossentropy(from_logits=True, gamma=gamma),
+            loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
             optimizer=tf.keras.optimizers.Adam(learning_rate),
             metrics=["accuracy"],
         )
