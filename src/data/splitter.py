@@ -55,9 +55,7 @@ DS2_RECORDS = {
     "233",
     "234",
 }
-# Validation records carved out of DS1. Chosen so all 5 classes (including the
-# rare fusion class 3) are represented in cv, while keeping record 208 (which
-# holds most of the fusion beats) in the training set.
+# Validation records carved out of DS1.
 CV_RECORDS = {"108", "205", "223"}
 TRAIN_RECORDS = DS1_RECORDS - CV_RECORDS
 

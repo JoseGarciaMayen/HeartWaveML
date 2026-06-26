@@ -71,7 +71,7 @@ def _load_model(model_path: str):
     return joblib.load(model_path)
 
 
-CLASS_NAMES = {0: "N", 1: "S", 2: "V", 3: "F", 4: "Q"}
+CLASS_NAMES = {0: "N", 1: "S", 2: "V"}
 
 _NON_SCALAR_KEYS = ("cm", "labels")
 
