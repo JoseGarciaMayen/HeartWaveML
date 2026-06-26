@@ -1,3 +1,4 @@
+from sklearn.utils.class_weight import compute_sample_weight
 from xgboost import XGBClassifier
 
 from src.config import CNN_ARCH, DATA
@@ -16,8 +17,18 @@ class TrainerCONVXGB(TrainerTreeBased):
 
     def train(self):
         X_train, y_train, X_cv, y_cv, _ = self.load_data(DATA["cnn_train"], DATA["cnn_cv"])
+        sample_weights = compute_sample_weight("balanced", y_train)
         model, params = self.create_model()
-        self.mlflow_start(model, X_train, y_train, X_cv, y_cv, params, extra_params=CNN_ARCH)
+        self.mlflow_start(
+            model,
+            X_train,
+            y_train,
+            X_cv,
+            y_cv,
+            params,
+            sample_weights=sample_weights,
+            extra_params=CNN_ARCH,
+        )
 
 
 if __name__ == "__main__":

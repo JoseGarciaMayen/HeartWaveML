@@ -1,4 +1,5 @@
 import mlflow
+from sklearn.utils.class_weight import compute_sample_weight
 from xgboost import XGBClassifier
 
 from src.config import CNN_ARCH, DATA
@@ -12,6 +13,7 @@ class TunerCONVXGB(TunerBase):
         self.X_train, self.y_train, self.X_cv, self.y_cv = self.load_data(
             DATA["cnn_train"], DATA["cnn_cv"]
         )
+        self.sample_weights = compute_sample_weight("balanced", self.y_train)
 
     def objective(self, trial) -> float:
         params = {
@@ -33,7 +35,7 @@ class TunerCONVXGB(TunerBase):
             mlflow.log_params(params)
             mlflow.log_params(CNN_ARCH)
             model = XGBClassifier(**params)
-            model.fit(self.X_train, self.y_train)
+            model.fit(self.X_train, self.y_train, sample_weight=self.sample_weights)
             metrics = self.log_metrics(model, self.X_train, self.y_train, self.X_cv, self.y_cv)
             notify_telegram(
                 f"CONVXGB trial - f1: {metrics['val_f1_macro']:.4f}, f1_w: {metrics['val_f1_weighted']:.4f}"

@@ -39,6 +39,7 @@ class TunerCNNMLP(TunerBase):
         l2 = trial.suggest_float("l2", 0.0001, 0.0002, log=True)
         dropout = trial.suggest_float("dropout", 0, 0.4)
         learning_rate = trial.suggest_float("learning_rate", 1e-4, 1e-3, log=True)
+        gamma = trial.suggest_float("gamma", 0.5, 5.0)
         filters = trial.suggest_categorical("filters", [64])
         filter_multiplier = trial.suggest_categorical("filter_multiplier", [2])
         units_mlp1 = trial.suggest_categorical("units_mlp1", [512])
@@ -53,6 +54,7 @@ class TunerCNNMLP(TunerBase):
                 "l2": l2,
                 "dropout": dropout,
                 "learning_rate": learning_rate,
+                "gamma": gamma,
                 "filters": filters,
                 "filter_multiplier": filter_multiplier,
                 "units_mlp1": units_mlp1,
@@ -96,7 +98,7 @@ class TunerCNNMLP(TunerBase):
 
         model = Model(inputs=[input_cnn, input_mlp], outputs=output)
         model.compile(
-            loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+            loss=tf.keras.losses.SparseCategoricalFocalCrossentropy(from_logits=True, gamma=gamma),
             optimizer=tf.keras.optimizers.Adam(learning_rate),
             metrics=["accuracy"],
         )

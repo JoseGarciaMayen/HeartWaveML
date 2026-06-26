@@ -65,15 +65,13 @@ TRAIN_RECORDS = DS1_RECORDS - CV_RECORDS
 def split_data(path="data/interim/mitbih_combined_records.csv"):
     """
     Splits the dataset into training, validation and testing sets.
-    Then, applies SMOTE, filtering and scaling.
+    Then, applies filtering and scaling.
 
     The split is patient-wise following the de Chazal DS1/DS2 partition (see
     ``DS1_RECORDS``/``DS2_RECORDS``): training and validation come from DS1 and
     the test set is DS2, so no patient appears in more than one set. This is the
     standard inter-patient paradigm and avoids inter-patient data leakage.
     """
-    from imblearn.over_sampling import SMOTE
-
     df = pd.read_csv(path)
     df = df[df["class"] != 4].reset_index(drop=True)
     record = df["record"].astype(str)
@@ -87,12 +85,6 @@ def split_data(path="data/interim/mitbih_combined_records.csv"):
     X_train, y_train = X[train_mask], y[train_mask]
     X_cv, y_cv = X[cv_mask], y[cv_mask]
     X_test, y_test = X[test_mask], y[test_mask]
-
-    sampling_strategy_dict = {1: 2500, 3: 2500}
-
-    smote = SMOTE(sampling_strategy=sampling_strategy_dict, random_state=42, k_neighbors=5)
-
-    X_train, y_train = smote.fit_resample(X_train, y_train)
 
     b, a = get_filter_coeffs()
     X_train_filtered = np.apply_along_axis(apply_filter, axis=1, arr=X_train, b=b, a=a)
