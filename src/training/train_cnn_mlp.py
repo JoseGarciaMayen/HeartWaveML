@@ -43,7 +43,7 @@ class TrainerCNNMLP(TrainerBase):
     def _split_inputs(self, X):
         return [X.iloc[:, :187].values.reshape(-1, 187, 1), X.iloc[:, 187:].values]
 
-    def create_model(self, input_shape_cnn=(187, 1), input_shape_mlp=(36,), num_classes=4):
+    def create_model(self, input_shape_cnn=(187, 1), input_shape_mlp=(36,), num_classes=3):
         p = self.get_typed_params(self.get_params())
 
         mlflow.log_params(
@@ -139,7 +139,8 @@ class TrainerCNNMLP(TrainerBase):
             DATA["feat_train"], DATA["feat_cv"]
         )
         n_mlp_features = X_train.shape[1] - 187
-        model = self.create_model(input_shape_mlp=(n_mlp_features,))
+        num_classes = y_train.nunique()
+        model = self.create_model(input_shape_mlp=(n_mlp_features,), num_classes=num_classes)
         val_f1 = self.mlflow_start(model, X_train, y_train, X_cv, y_cv, class_weights)
         return val_f1
 

@@ -74,6 +74,7 @@ def split_data(path="data/interim/mitbih_combined_records.csv"):
     """
     df = pd.read_csv(path)
     df = df[df["class"] != 4].reset_index(drop=True)
+    df["class"] = df["class"].replace({3: 2})  # Fusion -> Ventricular (AAMI convention)
     record = df["record"].astype(str)
     drop_cols = [c for c in ["class", "record", "beat_center"] if c in df.columns]
     X = df.drop(drop_cols, axis=1)

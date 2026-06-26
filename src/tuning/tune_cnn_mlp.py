@@ -34,9 +34,10 @@ class TunerCNNMLP(TunerBase):
         self.X_cv_cnn = self.X_cv.iloc[:, :187].values.reshape(-1, 187, 1)
         self.X_cv_mlp = self.X_cv.iloc[:, 187:].values
         self.n_mlp_features = self.X_train_mlp.shape[1]
+        self.num_classes = self.y_train.nunique()
         self.class_weights = get_class_weights(self.y_train)
 
-    def _build_model(self, trial, input_shape_cnn=(187, 1), input_shape_mlp=(36,), num_classes=4):
+    def _build_model(self, trial, input_shape_cnn=(187, 1), input_shape_mlp=(36,), num_classes=3):
         l2 = trial.suggest_float("l2", 0.0001, 0.0002, log=True)
         dropout = trial.suggest_float("dropout", 0, 0.4)
         learning_rate = trial.suggest_float("learning_rate", 1e-4, 1e-3, log=True)
@@ -111,7 +112,9 @@ class TunerCNNMLP(TunerBase):
             epochs = trial.suggest_categorical("epochs", [25, 50, 75])
             mlflow.log_param("epochs", epochs)
 
-            model = self._build_model(trial, input_shape_mlp=(self.n_mlp_features,))
+            model = self._build_model(
+                trial, input_shape_mlp=(self.n_mlp_features,), num_classes=self.num_classes
+            )
             early_stopping = tf.keras.callbacks.EarlyStopping(
                 monitor="val_loss", patience=10, restore_best_weights=True
             )

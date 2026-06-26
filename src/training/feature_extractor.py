@@ -45,7 +45,8 @@ def create_model_cnn(
     features = GlobalAveragePooling1D()(x)
 
     features_reduced = Dense(64, activation="relu")(features)
-    predictions = Dense(4, activation="linear")(features_reduced)
+    num_classes = len(np.unique(y_train)) if y_train is not None else 3
+    predictions = Dense(num_classes, activation="linear")(features_reduced)
 
     model = Model(inputs=input_cnn, outputs=predictions)
 

@@ -28,7 +28,7 @@ class TunerCONVXGB(TunerBase):
             "reg_lambda": trial.suggest_float("reg_lambda", 0.01, 1.0, log=True),
             "gamma": trial.suggest_float("gamma", 0.01, 1.0, log=True),
             "objective": "multi:softprob",
-            "num_class": 4,
+            "num_class": 3,
             "random_state": 42,
         }
         with mlflow.start_run(nested=True):

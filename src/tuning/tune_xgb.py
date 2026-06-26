@@ -30,7 +30,7 @@ class TunerXGB(TunerBase):
             "min_child_weight": trial.suggest_int("min_child_weight", 1, 10),
             "grow_policy": trial.suggest_categorical("grow_policy", ["depthwise", "lossguide"]),
             "objective": "multi:softprob",
-            "num_class": 4,
+            "num_class": 3,
             "random_state": 42,
         }
         with mlflow.start_run(nested=True):
