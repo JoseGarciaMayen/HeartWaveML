@@ -54,7 +54,7 @@ class TrainerBase:
         X_cv = cv_df.drop("class", axis=1)
         y_cv = cv_df["class"]
 
-        class_weights = get_class_weights()
+        class_weights = get_class_weights(y_train)
 
         return X_train, y_train, X_cv, y_cv, class_weights
 

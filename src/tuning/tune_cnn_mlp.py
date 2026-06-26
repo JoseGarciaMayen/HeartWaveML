@@ -33,7 +33,7 @@ class TunerCNNMLP(TunerBase):
         self.X_train_mlp = self.X_train.iloc[:, 187:].values
         self.X_cv_cnn = self.X_cv.iloc[:, :187].values.reshape(-1, 187, 1)
         self.X_cv_mlp = self.X_cv.iloc[:, 187:].values
-        self.class_weights = get_class_weights()
+        self.class_weights = get_class_weights(self.y_train)
 
     def _build_model(self, trial, input_shape_cnn=(187, 1), input_shape_mlp=(36,), num_classes=4):
         l2 = trial.suggest_float("l2", 0.0001, 0.0002, log=True)

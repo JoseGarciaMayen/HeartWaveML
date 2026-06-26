@@ -1,6 +1,7 @@
 import os
 import re
 
+import numpy as np
 import pandas as pd
 import requests
 from dotenv import load_dotenv
@@ -72,20 +73,16 @@ def apply_filter(data, b, a):
     return filtfilt(b, a, data)
 
 
-def get_class_weights():
+def get_class_weights(y_train):
     """
-    Computes class weights to handle class imbalance in the dataset.
+    Computes balanced class weights from the given training labels to handle
+    class imbalance
     """
-    train_df = pd.read_csv("data/processed/feat/mitbih_train_features.csv")
-    y_train = train_df["class"]
+    y = pd.Series(y_train).reset_index(drop=True)
+    unique_classes = sorted(y.unique())
+    n, k = len(y), len(unique_classes)
 
-    class_weights = {}
-    unique_classes = sorted(y_train.unique())
-
-    for cls in unique_classes:
-        class_weights[cls] = len(y_train) / (len(unique_classes) * sum(y_train == cls))
-
-    return class_weights
+    return {cls: n / (k * (y == cls).sum()) for cls in unique_classes}
 
 
 def notify_telegram(msg):
@@ -131,7 +128,9 @@ def compute_and_log_metrics(model, X_train, y_train, X_cv, y_cv) -> dict:
         "val_accuracy": model.score(X_cv, y_cv),
         "val_loss": log_loss(y_cv, model.predict_proba(X_cv)),
     }
-    y_cv_pred = model.predict(X_cv)
+    # ravel() because some classifiers (e.g. CatBoost) return predictions with
+    # shape (n, 1) in multiclass, which would break f1_score against a 1D y.
+    y_cv_pred = np.asarray(model.predict(X_cv)).ravel()
     metrics["val_f1_macro"] = f1_score(y_cv, y_cv_pred, average="macro")
     metrics["val_f1_weighted"] = f1_score(y_cv, y_cv_pred, average="weighted")
 
