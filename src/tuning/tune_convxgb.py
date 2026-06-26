@@ -44,7 +44,7 @@ class TunerCONVXGB(TunerBase):
         }
         with mlflow.start_run(nested=True):
             mlflow.log_params(params)
-            mlflow.log_params(CNN_ARCH)
+            mlflow.log_params({f"cnn_{k}": v for k, v in CNN_ARCH.items()})
             model = XGBClassifier(**params)
             model.fit(self.X_train, self.y_train, sample_weight=self.sample_weights)
             metrics = self.log_metrics(model, self.X_train, self.y_train, self.X_cv, self.y_cv)
