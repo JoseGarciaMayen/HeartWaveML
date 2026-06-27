@@ -20,7 +20,7 @@ from tensorflow.keras.models import Model  # type: ignore
 
 from src.config import DATA, TUNING
 from src.tuning.tuner import TunerBase
-from src.utils import get_class_weights, notify_telegram
+from src.utils import FocalLoss, get_class_weights, notify_telegram
 
 
 class TunerCNNMLP(TunerBase):
@@ -107,7 +107,7 @@ class TunerCNNMLP(TunerBase):
 
         model = Model(inputs=[input_cnn, input_mlp], outputs=output)
         model.compile(
-            loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+            loss=FocalLoss(gamma=gamma),
             optimizer=tf.keras.optimizers.Adam(learning_rate),
             metrics=["accuracy"],
         )

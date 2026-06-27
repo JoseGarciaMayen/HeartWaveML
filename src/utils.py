@@ -4,6 +4,7 @@ import re
 import numpy as np
 import pandas as pd
 import requests
+import tensorflow as tf
 from dotenv import load_dotenv
 from scipy.signal import butter, filtfilt
 
@@ -115,6 +116,35 @@ def load_splits(train_path: str, cv_path: str):
         cv_df.drop("class", axis=1),
         cv_df["class"],
     )
+
+
+class FocalLoss(tf.keras.losses.Loss):
+    """
+    Sparse categorical focal loss compatible with TF 2.10
+    """
+
+    def __init__(self, gamma: float = 2.0, **kwargs):
+        super().__init__(**kwargs)
+        self.gamma = float(gamma)
+
+    def call(self, y_true, y_pred):
+        # y_pred: logits (batch, num_classes); y_true: integer labels (batch,)
+        probs = tf.nn.softmax(y_pred, axis=-1)
+        y_true_i = tf.cast(tf.reshape(y_true, [-1]), tf.int32)
+        num_classes = tf.shape(y_pred)[-1]
+        # Probability assigned to the correct class
+        p_t = tf.reduce_sum(
+            probs * tf.one_hot(y_true_i, num_classes, dtype=probs.dtype),
+            axis=-1,
+        )
+        focal_weight = tf.pow(1.0 - p_t, self.gamma)
+        xent = tf.keras.losses.sparse_categorical_crossentropy(y_true, y_pred, from_logits=True)
+        return tf.reduce_mean(focal_weight * xent)
+
+    def get_config(self):
+        cfg = super().get_config()
+        cfg["gamma"] = self.gamma
+        return cfg
 
 
 def compute_and_log_metrics(model, X_train, y_train, X_cv, y_cv) -> dict:

@@ -19,7 +19,7 @@ from tensorflow.keras.models import Model  # type: ignore
 
 from src.config import DATA
 from src.training.trainer import TrainerBase
-from src.utils import notify_telegram
+from src.utils import FocalLoss, notify_telegram
 
 
 class TrainerCNNMLP(TrainerBase):
@@ -87,7 +87,7 @@ class TrainerCNNMLP(TrainerBase):
 
         model = Model(inputs=[input_cnn, input_mlp], outputs=output)
         model.compile(
-            loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+            loss=FocalLoss(gamma=p["gamma"]),
             optimizer=tf.keras.optimizers.Adam(p["learning_rate"]),
             metrics=["accuracy"],
         )
