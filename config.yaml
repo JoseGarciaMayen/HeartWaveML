@@ -31,14 +31,14 @@ ensemble:
 
 # Training params for the CNN feature extractor (not tuned by Optuna)
 feature_extractor:
-  epochs: 50
+  epochs: 30 # 50
   batch_size: 64
 
 # Optuna tuning config. n_trials is the quickest knob to reduce run time.
 # search_space: [min, max] for each hyperparameter.
 tuning:
   xgb:
-    n_trials: 200
+    n_trials: 50 # 200
     search_space:
       max_depth:          [3, 10]
       learning_rate:      [0.005, 0.5]
@@ -53,7 +53,7 @@ tuning:
       min_child_weight:   [1, 10]
 
   convxgb:
-    n_trials: 200
+    n_trials: 50 # 200
     search_space:
       max_depth:          [3, 10]
       learning_rate:      [0.01, 1.0]
@@ -67,7 +67,7 @@ tuning:
       gamma:              [0.01, 1.0]
 
   extratrees:
-    n_trials: 100
+    n_trials: 50 # 100
     search_space:
       n_estimators:       [100, 1000]
       max_depth:          [3, 30]
@@ -75,7 +75,7 @@ tuning:
       min_samples_leaf:   [1, 10]
 
   lgbm:
-    n_trials: 150
+    n_trials: 50 # 150
     search_space:
       n_estimators:       [100, 1000]
       learning_rate:      [0.005, 0.5]
@@ -87,7 +87,7 @@ tuning:
       reg_lambda:         [0.01, 1.0]
 
   catboost:
-    n_trials: 100
+    n_trials: 50 #100
     search_space:
       iterations:         [100, 1000]
       learning_rate:      [0.01, 0.5]
