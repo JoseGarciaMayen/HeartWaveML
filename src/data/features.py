@@ -64,25 +64,71 @@ def extract_features_from_beat(beat_signal, fs=360):
     return features
 
 
+_RR_COLS = [
+    "rr_pre",
+    "rr_post",
+    "rr_ratio",
+    "rr_local_mean",
+    "rr_global_mean",
+    "rr_pre_norm_local",
+    "rr_post_norm_local",
+    "rr_pre_norm_global",
+    "rr_local_std",
+    "rr_rmssd",
+]
+
+
 def _compute_rr_features(df):
     """
-    Computes RR interval features from beat_center positions grouped by record.
-    Returns a DataFrame with rr_pre, rr_post, rr_ratio aligned to df's index.
+    Computes 10 HRV-based RR interval features from beat_center positions
+    grouped by record.
     """
-    rr = pd.DataFrame(index=df.index, columns=["rr_pre", "rr_post", "rr_ratio"], dtype=float)
+    rr = pd.DataFrame(index=df.index, columns=_RR_COLS, dtype=float)
+
     for _, group in df.groupby("record", sort=False):
         centers = group["beat_center"].values
         n = len(centers)
+
         pre = np.empty(n)
         post = np.empty(n)
-        pre[1:] = (centers[1:] - centers[:-1]) / 360.0
-        post[:-1] = (centers[1:] - centers[:-1]) / 360.0
-        pre[0] = post[0] if n > 1 else 0.0
-        post[-1] = pre[-1] if n > 1 else 0.0
+        if n > 1:
+            intervals = (centers[1:] - centers[:-1]) / 360.0
+            pre[1:] = intervals
+            post[:-1] = intervals
+            pre[0] = pre[1]
+            post[-1] = post[-2]
+        else:
+            pre[0] = 0.0
+            post[0] = 0.0
+
         ratio = pre / (post + 1e-6)
-        rr.loc[group.index, "rr_pre"] = pre
-        rr.loc[group.index, "rr_post"] = post
-        rr.loc[group.index, "rr_ratio"] = ratio
+
+        s = pd.Series(pre)
+        local_mean = s.rolling(window=10, min_periods=1).mean().to_numpy()
+        global_mean = s.expanding(min_periods=1).mean().to_numpy()
+        local_std = s.rolling(window=10, min_periods=2).std().fillna(0.0).to_numpy()
+        rmssd = (
+            s.diff()
+            .pow(2)
+            .rolling(window=5, min_periods=1)
+            .mean()
+            .apply(np.sqrt)
+            .fillna(0.0)
+            .to_numpy()
+        )
+
+        idx = group.index
+        rr.loc[idx, "rr_pre"] = pre
+        rr.loc[idx, "rr_post"] = post
+        rr.loc[idx, "rr_ratio"] = ratio
+        rr.loc[idx, "rr_local_mean"] = local_mean
+        rr.loc[idx, "rr_global_mean"] = global_mean
+        rr.loc[idx, "rr_pre_norm_local"] = pre / (local_mean + 1e-6)
+        rr.loc[idx, "rr_post_norm_local"] = post / (local_mean + 1e-6)
+        rr.loc[idx, "rr_pre_norm_global"] = pre / (global_mean + 1e-6)
+        rr.loc[idx, "rr_local_std"] = local_std
+        rr.loc[idx, "rr_rmssd"] = rmssd
+
     return rr
 
 
