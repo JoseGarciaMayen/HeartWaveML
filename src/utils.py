@@ -118,8 +118,7 @@ def load_splits(train_path: str, cv_path: str):
 
 
 def FocalLoss(gamma: float = 2.0, **kwargs):
-    """Return a sparse categorical focal loss instance TF 2.10 compatible.
-    """
+    """Return a sparse categorical focal loss instance TF 2.10 compatible."""
     import tensorflow as tf
 
     class _FocalLoss(tf.keras.losses.Loss):
@@ -136,9 +135,7 @@ def FocalLoss(gamma: float = 2.0, **kwargs):
                 axis=-1,
             )
             focal_weight = tf.pow(1.0 - p_t, self.gamma)
-            xent = tf.keras.losses.sparse_categorical_crossentropy(
-                y_true, y_pred, from_logits=True
-            )
+            xent = tf.keras.losses.sparse_categorical_crossentropy(y_true, y_pred, from_logits=True)
             return tf.reduce_mean(focal_weight * xent)
 
         def get_config(self):

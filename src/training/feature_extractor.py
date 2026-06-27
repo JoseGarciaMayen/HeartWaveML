@@ -15,17 +15,35 @@ from tensorflow.keras.layers import (  # type: ignore
 from tensorflow.keras.models import Model  # type: ignore
 
 from src.config import CNN_ARCH, DATA, FEATURE_EXTRACTOR
+from src.utils import get_class_weights
 
 np.random.seed(42)
 tf.random.set_seed(42)
 
 
+def _matched_filter_init(model, X_train_np, y_train_np):
+    """Initialize the first 3 filters of the first Conv1D with per-class average waveforms.
+
+    Each class average is subsampled to kernel_size=5 points and assigned to one
+    filter slot, giving the network a head start on learning class-discriminative
+    patterns (matched filter theory, Farag 2023).
+    """
+    first_conv = next(layer for layer in model.layers if isinstance(layer, Conv1D))
+    W, b = first_conv.get_weights()  # W: (kernel_size=5, in_channels=1, n_filters)
+
+    classes = sorted(np.unique(y_train_np))
+    indices = np.linspace(0, X_train_np.shape[1] - 1, W.shape[0], dtype=int)
+    for i, cls in enumerate(classes[: W.shape[2]]):  # only as many filters as classes
+        template = X_train_np[y_train_np == cls].mean(axis=0)
+        W[:, 0, i] = template[indices]
+
+    first_conv.set_weights([W, b])
+
+
 def create_model_cnn(
     input_shape=(187, 1), X_train=None, y_train=None, X_cv=None, y_cv=None, params=None
 ):
-    """
-    Builds and trains the CNN, then returns the feature extractor
-    """
+    """Builds and trains the CNN, then returns the feature extractor."""
     if params is None:
         params = CNN_ARCH
 
@@ -56,9 +74,18 @@ def create_model_cnn(
         metrics=["accuracy"],
     )
 
+    # matched filter init
+    X_np = np.array(X_train) if not isinstance(X_train, np.ndarray) else X_train
+    y_np = np.array(y_train) if not isinstance(y_train, np.ndarray) else y_train
+    _matched_filter_init(model, X_np, y_np)
+
+    # class-weighted training so the CNN learns S-class representations
+    class_weights = get_class_weights(y_train)
+
     model.fit(
         X_train,
         y_train,
+        class_weight=class_weights,
         epochs=FEATURE_EXTRACTOR["epochs"],
         batch_size=FEATURE_EXTRACTOR["batch_size"],
         validation_data=(X_cv, y_cv),
