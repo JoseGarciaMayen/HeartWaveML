@@ -67,7 +67,13 @@ def _load_model(model_path: str):
     if model_path.endswith(".keras"):
         import tensorflow as tf
 
-        return tf.keras.models.load_model(model_path)
+        from src.utils import FocalLoss
+
+        loss_instance = FocalLoss()
+        return tf.keras.models.load_model(
+            model_path,
+            custom_objects={type(loss_instance).__name__: type(loss_instance)},
+        )
     return joblib.load(model_path)
 
 
