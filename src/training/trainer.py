@@ -19,6 +19,9 @@ class TrainerBase:
         self.mlflow_experiment_name = mlflow_experiment_name
         mlflow.set_tracking_uri(self.mlflow_tracking_uri)
         mlflow.set_experiment(f"{self.mlflow_experiment_name}_training")
+        from src.tracking import init_clearml
+
+        self.clearml_task = init_clearml(f"{self.mlflow_experiment_name}_training")
 
     def create_model(self):
         raise NotImplementedError("This method should be implemented in subclasses.")

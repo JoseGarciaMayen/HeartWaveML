@@ -19,6 +19,9 @@ class TunerBase(ABC):
         self.direction = direction
         mlflow.set_tracking_uri(f"http://{IP}:5000")
         mlflow.set_experiment(experiment_name)
+        from src.tracking import init_clearml
+
+        self.clearml_task = init_clearml(experiment_name)
 
     def load_data(self, train_path: str, cv_path: str):
         """Load train/cv CSVs. Return X_train, y_train, X_cv, y_cv."""
