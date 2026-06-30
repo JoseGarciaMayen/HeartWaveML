@@ -155,6 +155,53 @@ def FocalLoss(gamma: float = 2.0, **kwargs):
     return _FocalLoss(gamma=gamma, **kwargs)
 
 
+def make_best_f1_restorer(X_val, y_val, center_idx=None, batch_size=512):
+    """Keras callback that selects the best epoch by macro-F1, not val_loss.
+
+    Each epoch it predicts on the validation set, computes macro-F1, injects it
+    into ``logs`` as ``val_f1_macro`` (so EarlyStopping can monitor it and MLflow
+    autolog records it), tracks the best weights, and restores them on train end.
+
+    ``center_idx``: for many-to-many models, the timestep to score
+    (``logits[:, center_idx, :]``); ``None`` for many-to-one models.
+    ``X_val`` may be a list of arrays (e.g. CNN-MLP dual input).
+
+    Factory function with lazy TF import for CI, same pattern as FocalLoss.
+    """
+    import tensorflow as tf
+    from sklearn.metrics import f1_score
+
+    class _BestF1Restorer(tf.keras.callbacks.Callback):
+        def __init__(self):
+            super().__init__()
+            self.best = -1.0
+            self.best_weights = None
+            self.best_epoch = -1
+
+        def on_epoch_end(self, epoch, logs=None):
+            logs = logs if logs is not None else {}
+            logits = self.model.predict(X_val, batch_size=batch_size, verbose=0)
+            if center_idx is not None:
+                logits = logits[:, center_idx, :]
+            y_pred = np.argmax(logits, axis=1)
+            f1 = f1_score(y_val, y_pred, average="macro", zero_division=0)
+            logs["val_f1_macro"] = f1
+            if f1 > self.best:
+                self.best = f1
+                self.best_weights = self.model.get_weights()
+                self.best_epoch = epoch
+
+        def on_train_end(self, logs=None):
+            if self.best_weights is not None:
+                self.model.set_weights(self.best_weights)
+                print(
+                    f"\n[BestF1] restored epoch {self.best_epoch + 1} "
+                    f"(val_f1_macro={self.best:.4f})"
+                )
+
+    return _BestF1Restorer()
+
+
 def compute_and_log_metrics(model, X_train, y_train, X_cv, y_cv) -> dict:
     """Compute accuracy, log_loss, and F1 on train/val sets and log to the active MLflow run."""
     import mlflow

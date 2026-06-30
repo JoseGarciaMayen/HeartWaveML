@@ -19,7 +19,7 @@ from tensorflow.keras.models import Model  # type: ignore
 
 from src.config import DATA
 from src.training.trainer import TrainerBase
-from src.utils import FocalLoss, notify_telegram
+from src.utils import FocalLoss, make_best_f1_restorer, notify_telegram
 
 
 class TrainerCNNMLP(TrainerBase):
@@ -100,12 +100,14 @@ class TrainerCNNMLP(TrainerBase):
         mlflow.tensorflow.autolog(log_models=False, log_datasets=False, silent=True)
 
         with mlflow.start_run(nested=True):
+            best_f1 = make_best_f1_restorer(self._split_inputs(X_cv), y_cv, center_idx=None)
             model.fit(
                 self._split_inputs(X_train),
                 y_train,
                 class_weight=class_weights,
                 validation_data=(self._split_inputs(X_cv), y_cv),
                 epochs=50,
+                callbacks=[best_f1],
             )
 
             loss, acc = model.evaluate(self._split_inputs(X_train), y_train, verbose=0)

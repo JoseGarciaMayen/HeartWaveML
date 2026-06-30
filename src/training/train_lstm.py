@@ -14,7 +14,7 @@ from tensorflow.keras.layers import (  # type: ignore
 from tensorflow.keras.models import Model  # type: ignore
 
 from src.training.trainer import TrainerBase
-from src.utils import FocalLoss, get_class_weights, notify_telegram
+from src.utils import FocalLoss, get_class_weights, make_best_f1_restorer, notify_telegram
 
 # BiLSTM is many-to-one, uses its own small window (W=5), separate from the
 # W=45 sequences that the many-to-many Transformer/Seq2Seq models consume.
@@ -72,8 +72,9 @@ class TrainerLSTM(TrainerBase):
         mlflow.tensorflow.autolog(log_models=False, log_datasets=False, silent=True)
 
         with mlflow.start_run(nested=True):
+            best_f1 = make_best_f1_restorer(X_cv, y_cv, center_idx=None)
             early_stop = tf.keras.callbacks.EarlyStopping(
-                monitor="val_loss", patience=10, restore_best_weights=True
+                monitor="val_f1_macro", mode="max", patience=10, restore_best_weights=False
             )
             model.fit(
                 X_train,
@@ -82,7 +83,7 @@ class TrainerLSTM(TrainerBase):
                 validation_data=(X_cv, y_cv),
                 epochs=p.get("epochs", 50),
                 batch_size=256,
-                callbacks=[early_stop],
+                callbacks=[best_f1, early_stop],
                 verbose=1,
             )
 

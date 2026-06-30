@@ -15,7 +15,7 @@ from tensorflow.keras.layers import (  # type: ignore
 from tensorflow.keras.models import Model  # type: ignore
 
 from src.training.trainer import TrainerBase
-from src.utils import make_class_weight_array, notify_telegram
+from src.utils import make_best_f1_restorer, make_class_weight_array, notify_telegram
 
 SEQ_DIR = "data/processed/seq"
 
@@ -82,9 +82,11 @@ class TrainerSeq2Seq(TrainerBase):
         p,
     ):
         mlflow.tensorflow.autolog(log_models=False, log_datasets=False, silent=True)
+        center_idx = X_cv.shape[1] // 2
         with mlflow.start_run(nested=True):
+            best_f1 = make_best_f1_restorer(X_cv, y_cv_center, center_idx=center_idx)
             cb = tf.keras.callbacks.EarlyStopping(
-                monitor="val_loss", patience=10, restore_best_weights=True
+                monitor="val_f1_macro", mode="max", patience=10, restore_best_weights=False
             )
             model.fit(
                 X_train,
@@ -92,12 +94,11 @@ class TrainerSeq2Seq(TrainerBase):
                 validation_data=(X_cv, y_cv_seq, sw_cv),
                 epochs=p.get("epochs", 50),
                 batch_size=256,
-                callbacks=[cb],
+                callbacks=[best_f1, cb],
                 sample_weight=sw_train,
                 verbose=1,
             )
 
-            center_idx = X_cv.shape[1] // 2
             logits = model.predict(X_cv, batch_size=512, verbose=0)  # (N, W, 3)
             y_pred = np.argmax(logits[:, center_idx, :], axis=1)
             val_f1 = f1_score(y_cv_center, y_pred, average="macro", zero_division=0)

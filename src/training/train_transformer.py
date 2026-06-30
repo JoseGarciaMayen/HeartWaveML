@@ -16,7 +16,7 @@ from tensorflow.keras.layers import (  # type: ignore
 from tensorflow.keras.models import Model  # type: ignore
 
 from src.training.trainer import TrainerBase
-from src.utils import make_class_weight_array, notify_telegram
+from src.utils import make_best_f1_restorer, make_class_weight_array, notify_telegram
 
 SEQ_DIR = "data/processed/seq"
 
@@ -97,8 +97,9 @@ class TrainerTransformer(TrainerBase):
         center_idx = X_train.shape[1] // 2
         mlflow.tensorflow.autolog(log_models=False, log_datasets=False, silent=True)
         with mlflow.start_run(nested=True):
+            best_f1 = make_best_f1_restorer(X_cv, y_cv_center, center_idx=center_idx)
             cb = tf.keras.callbacks.EarlyStopping(
-                monitor="val_loss", patience=10, restore_best_weights=True
+                monitor="val_f1_macro", mode="max", patience=10, restore_best_weights=False
             )
             model.fit(
                 X_train,
@@ -106,7 +107,7 @@ class TrainerTransformer(TrainerBase):
                 validation_data=(X_cv, y_cv_seq, sw_cv),
                 epochs=p.get("epochs", 50),
                 batch_size=256,
-                callbacks=[cb],
+                callbacks=[best_f1, cb],
                 sample_weight=sw_train,
                 verbose=1,
             )
