@@ -11,7 +11,7 @@ def _clearml_configured() -> bool:
     return os.path.exists(os.path.expanduser("~/clearml.conf"))
 
 
-def init_clearml(task_name: str):
+def init_clearml(task_name: str, task_type: str = "training", tags: list[str] | None = None):
     """Start a ClearML Task alongside MLflow. Returns the Task or None.
 
     No-op if ClearML is missing or unconfigured, so the existing MLflow-only
@@ -29,6 +29,8 @@ def init_clearml(task_name: str):
         return Task.init(
             project_name=PROJECT_NAME,
             task_name=task_name,
+            task_type=task_type,
+            tags=tags,
             auto_connect_frameworks=True,
             reuse_last_task_id=False,
             output_uri=False,

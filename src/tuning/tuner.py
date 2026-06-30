@@ -19,9 +19,6 @@ class TunerBase(ABC):
         self.direction = direction
         mlflow.set_tracking_uri(f"http://{IP}:5000")
         mlflow.set_experiment(experiment_name)
-        from src.tracking import init_clearml
-
-        self.clearml_task = init_clearml(experiment_name)
 
     def load_data(self, train_path: str, cv_path: str):
         """Load train/cv CSVs. Return X_train, y_train, X_cv, y_cv."""
@@ -40,9 +37,24 @@ class TunerBase(ABC):
         """Define the Optuna search space. Must return the metric to optimize."""
         ...
 
+    def _run_trial(self, trial):
+        """Wrap objective() with one ClearML Task per trial (mirrors MLflow's nested run)."""
+        from src.tracking import init_clearml
+
+        clearml_task = init_clearml(
+            f"{self.experiment_name}_trial{trial.number}",
+            task_type="optimizer",
+            tags=[self.experiment_name],
+        )
+        try:
+            return self.objective(trial)
+        finally:
+            if clearml_task is not None:
+                clearml_task.close()
+
     def run(self, pruner=None, enqueue_params: list[dict] | None = None):
         study = optuna.create_study(direction=self.direction, pruner=pruner)
         for params in enqueue_params or []:
             study.enqueue_trial(params)
-        study.optimize(self.objective, n_trials=self.n_trials, show_progress_bar=True)
+        study.optimize(self._run_trial, n_trials=self.n_trials, show_progress_bar=True)
         return study
