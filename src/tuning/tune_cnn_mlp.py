@@ -60,6 +60,7 @@ class TunerCNNMLP(TunerBase):
                 "input_shape_cnn": input_shape_cnn,
                 "input_shape_mlp": input_shape_mlp,
                 "num_classes": num_classes,
+                "conv_layers": 4,
                 "l2": l2,
                 "dropout": dropout,
                 "learning_rate": learning_rate,
@@ -72,23 +73,21 @@ class TunerCNNMLP(TunerBase):
             }
         )
 
-        input_cnn = Input(input_shape_cnn)
-        x = Conv1D(
-            filters, 5, activation="relu", kernel_regularizer=regularizers.l2(l2), padding="same"
-        )(input_cnn)
-        x = BatchNormalization()(x)
-        x = MaxPooling1D(2)(x)
-        x = Dropout(dropout)(x)
-        x = Conv1D(
+        conv_filters = [
+            filters,
             filters * filter_multiplier,
-            5,
-            activation="relu",
-            kernel_regularizer=regularizers.l2(l2),
-            padding="same",
-        )(x)
-        x = BatchNormalization()(x)
-        x = MaxPooling1D(2)(x)
-        x = Dropout(dropout)(x)
+            filters * filter_multiplier ** 2,
+            filters * filter_multiplier ** 2,
+        ]
+        input_cnn = Input(input_shape_cnn)
+        x = input_cnn
+        for f in conv_filters:
+            x = Conv1D(
+                f, 5, activation="relu", kernel_regularizer=regularizers.l2(l2), padding="same"
+            )(x)
+            x = BatchNormalization()(x)
+            x = MaxPooling1D(2)(x)
+            x = Dropout(dropout)(x)
         x = Flatten()(x)
 
         input_mlp = Input(input_shape_mlp)
