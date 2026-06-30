@@ -125,7 +125,9 @@ class TunerCNNMLP(TunerBase):
                 [self.X_cv_cnn, self.X_cv_mlp], self.y_cv, center_idx=None
             )
             early_stopping = tf.keras.callbacks.EarlyStopping(
-                monitor="val_f1_macro", mode="max", patience=self._patience,
+                monitor="val_f1_macro",
+                mode="max",
+                patience=self._patience,
                 restore_best_weights=False,
             )
             model.fit(

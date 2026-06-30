@@ -70,7 +70,9 @@ class TunerLSTM(TunerBase):
             model = _build_model(self.window, self.n_features, params)
             best_f1 = make_best_f1_restorer(self.X_cv, self.y_cv, center_idx=None)
             early_stop = tf.keras.callbacks.EarlyStopping(
-                monitor="val_f1_macro", mode="max", patience=self._patience,
+                monitor="val_f1_macro",
+                mode="max",
+                patience=self._patience,
                 restore_best_weights=False,
             )
             model.fit(

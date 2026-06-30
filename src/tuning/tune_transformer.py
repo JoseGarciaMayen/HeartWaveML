@@ -81,9 +81,7 @@ class TunerTransformer(TunerBase):
         with mlflow.start_run(nested=True):
             mlflow.log_params(params)
             model = self._build_model(d_model, num_heads, key_dim, ff_dim, num_blocks, dropout, lr)
-            best_f1 = make_best_f1_restorer(
-                self.X_cv, self.y_cv_center, center_idx=self.center_idx
-            )
+            best_f1 = make_best_f1_restorer(self.X_cv, self.y_cv_center, center_idx=self.center_idx)
             cb = tf.keras.callbacks.EarlyStopping(
                 monitor="val_f1_macro", mode="max", patience=7, restore_best_weights=False
             )
