@@ -13,9 +13,10 @@ from tensorflow.keras.models import Model  # type: ignore
 
 from src.config import TUNING
 from src.tuning.tuner import TunerBase
-from src.utils import FocalLoss, get_class_weights, notify_telegram
+from src.utils import FocalLoss, get_class_weights, make_best_f1_restorer, notify_telegram
 
-SEQ_DIR = "data/processed/seq"
+# LSTM many-to-one uses its own W=5 window, matching train_lstm.py.
+SEQ_DIR = "data/processed/seq_lstm"
 
 
 def _build_model(window, n_features, params, num_classes=3):
@@ -67,8 +68,10 @@ class TunerLSTM(TunerBase):
         with mlflow.start_run(nested=True):
             mlflow.log_params(params)
             model = _build_model(self.window, self.n_features, params)
+            best_f1 = make_best_f1_restorer(self.X_cv, self.y_cv, center_idx=None)
             early_stop = tf.keras.callbacks.EarlyStopping(
-                monitor="val_loss", patience=self._patience, restore_best_weights=True
+                monitor="val_f1_macro", mode="max", patience=self._patience,
+                restore_best_weights=False,
             )
             model.fit(
                 self.X_train,
@@ -77,7 +80,7 @@ class TunerLSTM(TunerBase):
                 validation_data=(self.X_cv, self.y_cv),
                 epochs=params["epochs"],
                 batch_size=256,
-                callbacks=[early_stop],
+                callbacks=[best_f1, early_stop],
                 verbose=0,
             )
             y_pred = np.argmax(model.predict(self.X_cv, batch_size=512, verbose=0), axis=1)

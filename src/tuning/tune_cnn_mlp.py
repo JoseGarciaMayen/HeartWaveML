@@ -20,7 +20,7 @@ from tensorflow.keras.models import Model  # type: ignore
 
 from src.config import DATA, TUNING
 from src.tuning.tuner import TunerBase
-from src.utils import FocalLoss, get_class_weights, notify_telegram
+from src.utils import FocalLoss, get_class_weights, make_best_f1_restorer, notify_telegram
 
 
 class TunerCNNMLP(TunerBase):
@@ -121,8 +121,12 @@ class TunerCNNMLP(TunerBase):
             model = self._build_model(
                 trial, input_shape_mlp=(self.n_mlp_features,), num_classes=self.num_classes
             )
+            best_f1 = make_best_f1_restorer(
+                [self.X_cv_cnn, self.X_cv_mlp], self.y_cv, center_idx=None
+            )
             early_stopping = tf.keras.callbacks.EarlyStopping(
-                monitor="val_loss", patience=self._patience, restore_best_weights=True
+                monitor="val_f1_macro", mode="max", patience=self._patience,
+                restore_best_weights=False,
             )
             model.fit(
                 [self.X_train_cnn, self.X_train_mlp],
@@ -130,7 +134,7 @@ class TunerCNNMLP(TunerBase):
                 class_weight=self.class_weights,
                 validation_data=([self.X_cv_cnn, self.X_cv_mlp], self.y_cv),
                 epochs=epochs,
-                callbacks=[early_stopping],
+                callbacks=[best_f1, early_stopping],
             )
 
             loss, acc = model.evaluate(

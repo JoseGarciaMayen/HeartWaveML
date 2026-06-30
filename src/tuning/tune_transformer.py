@@ -15,7 +15,7 @@ from tensorflow.keras.models import Model  # type: ignore
 
 from src.training.train_transformer import _transformer_block
 from src.tuning.tuner import TunerBase
-from src.utils import make_class_weight_array, notify_telegram
+from src.utils import make_best_f1_restorer, make_class_weight_array, notify_telegram
 
 SEQ_DIR = "data/processed/seq"
 N_TRIALS = 50
@@ -81,8 +81,11 @@ class TunerTransformer(TunerBase):
         with mlflow.start_run(nested=True):
             mlflow.log_params(params)
             model = self._build_model(d_model, num_heads, key_dim, ff_dim, num_blocks, dropout, lr)
+            best_f1 = make_best_f1_restorer(
+                self.X_cv, self.y_cv_center, center_idx=self.center_idx
+            )
             cb = tf.keras.callbacks.EarlyStopping(
-                monitor="val_loss", patience=7, restore_best_weights=True
+                monitor="val_f1_macro", mode="max", patience=7, restore_best_weights=False
             )
             model.fit(
                 self.X_train,
@@ -90,7 +93,7 @@ class TunerTransformer(TunerBase):
                 validation_data=(self.X_cv, self.y_cv_seq, self.sw_cv),
                 epochs=epochs,
                 batch_size=256,
-                callbacks=[cb],
+                callbacks=[best_f1, cb],
                 sample_weight=self.sw_train,
                 verbose=0,
             )
