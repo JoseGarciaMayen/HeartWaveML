@@ -101,13 +101,16 @@ class TrainerCNNMLP(TrainerBase):
 
         with mlflow.start_run(nested=True):
             best_f1 = make_best_f1_restorer(self._split_inputs(X_cv), y_cv, center_idx=None)
+            early_stop = tf.keras.callbacks.EarlyStopping(
+                monitor="val_f1_macro", mode="max", patience=10, restore_best_weights=False
+            )
             model.fit(
                 self._split_inputs(X_train),
                 y_train,
                 class_weight=class_weights,
                 validation_data=(self._split_inputs(X_cv), y_cv),
                 epochs=50,
-                callbacks=[best_f1],
+                callbacks=[best_f1, early_stop],
             )
 
             loss, acc = model.evaluate(self._split_inputs(X_train), y_train, verbose=0)
