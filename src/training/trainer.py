@@ -1,4 +1,6 @@
+import atexit
 import os
+import sys
 
 import joblib
 import mlflow
@@ -22,6 +24,15 @@ class TrainerBase:
         from src.tracking import init_clearml
 
         self.clearml_task = init_clearml(f"{self.mlflow_experiment_name}_training")
+        if self.clearml_task is not None:
+            atexit.register(self._finalize_clearml)
+
+    def _finalize_clearml(self):
+        if sys.exc_info()[0] is not None:
+            self.clearml_task.mark_stopped()
+        else:
+            self.clearml_task.mark_completed()
+        self.clearml_task.close()
 
     def create_model(self):
         raise NotImplementedError("This method should be implemented in subclasses.")

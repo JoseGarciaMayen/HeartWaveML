@@ -49,7 +49,15 @@ class TunerBase(ABC):
             tags=[self.experiment_name, self.run_id],
         )
         try:
-            return self.objective(trial)
+            result = self.objective(trial)
+        except BaseException:
+            if clearml_task is not None:
+                clearml_task.mark_stopped()
+            raise
+        else:
+            if clearml_task is not None:
+                clearml_task.mark_completed()
+            return result
         finally:
             if clearml_task is not None:
                 clearml_task.close()
