@@ -1,4 +1,5 @@
 import os
+import uuid
 from abc import ABC, abstractmethod
 
 import mlflow
@@ -17,6 +18,7 @@ class TunerBase(ABC):
         self.experiment_name = experiment_name
         self.n_trials = n_trials
         self.direction = direction
+        self.run_id = uuid.uuid4().hex[:8]
         mlflow.set_tracking_uri(f"http://{IP}:5000")
         mlflow.set_experiment(experiment_name)
 
@@ -42,9 +44,9 @@ class TunerBase(ABC):
         from src.tracking import init_clearml
 
         clearml_task = init_clearml(
-            f"{self.experiment_name}_trial{trial.number}",
+            f"{self.experiment_name}_{self.run_id}_trial{trial.number}",
             task_type="optimizer",
-            tags=[self.experiment_name],
+            tags=[self.experiment_name, self.run_id],
         )
         try:
             return self.objective(trial)
