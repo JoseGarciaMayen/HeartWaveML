@@ -9,6 +9,9 @@ data:
   base_cv:    "data/processed/base/mitbih_cv.csv"
   base_test:  "data/processed/base/mitbih_test.csv"
 
+sequences:
+  window: 45  # context window for BiLSTM: K beats before + current + K beats after (K = window//2)
+
 cnn_arch:
   l2: 0
   dropout: 0
@@ -24,10 +27,10 @@ ensemble:
     - lgbm
     - catboost
   weights:
-    xgb:        0.25
-    extratrees: 0.25
-    lgbm:       0.25
-    catboost:   0.25
+    xgb:        0.5
+    extratrees: 0.1
+    lgbm:       0.3
+    catboost:   0.1
 
 # Training params for the CNN feature extractor (not tuned by Optuna)
 feature_extractor:
@@ -95,9 +98,21 @@ tuning:
       l2_leaf_reg:        [1.0, 10.0]
       border_count:       [32, 255]
 
+  lstm:
+    n_trials: 30
+    patience: 10
+    search_space:
+      units1:        [32, 256]
+      units2:        [16, 128]
+      dense_units:   [16, 128]
+      dropout:       [0.0, 0.5]
+      learning_rate: [0.0001, 0.01]
+      gamma:         [0.5, 5.0]
+      epochs:        [20, 30, 50]
+
   cnn_mlp:
-    n_trials: 50
-    epochs:   [25, 50, 75]    # Optuna picks among these options
+    n_trials: 1 # 50
+    epochs:   [5, 10] # [25, 50, 75]    # Optuna picks among these options
     patience: 10              # EarlyStopping patience
     search_space:
       l2:            [0.0001, 0.0002]

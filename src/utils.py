@@ -73,6 +73,15 @@ def apply_filter(data, b, a):
     return filtfilt(b, a, data)
 
 
+def make_class_weight_array(y: np.ndarray, shape_2d: tuple | None = None) -> np.ndarray:
+    """sample_weight (N, W) para modelos Seq2Seq. Cada posición hereda el peso del beat central."""
+    cw = get_class_weights(y)
+    w_flat = np.array([cw[int(c)] for c in y], dtype=np.float32)
+    if shape_2d is None:
+        return w_flat
+    return np.tile(w_flat[:, None], (1, shape_2d[1]))
+
+
 def get_class_weights(y_train):
     """
     Computes balanced class weights from the given training labels to handle

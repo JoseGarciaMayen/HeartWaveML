@@ -16,6 +16,7 @@ from sklearn.metrics import (
 
 from src.config import DATA
 
+
 EVAL_CONFIG = {
     "xgb": {
         "model_path": "src/saved_models/modelXGB.joblib",
@@ -55,6 +56,36 @@ EVAL_CONFIG = {
         "test_data": DATA["feat_test"],
         "predict": lambda model, X: model.predict(X),
     },
+    "lstm": {
+        "model_path": "src/saved_models/modelLSTM.keras",
+        "load_data": lambda: (
+            np.load("data/processed/seq_lstm/test_X.npy"),
+            np.load("data/processed/seq_lstm/test_y.npy"),
+        ),
+        "predict": lambda model, X: np.argmax(
+            model.predict(X, batch_size=512, verbose=0), axis=1
+        ),
+    },
+    "transformer": {
+        "model_path": "src/saved_models/modelTransformer.keras",
+        "load_data": lambda: (
+            np.load("data/processed/seq/test_X.npy"),
+            np.load("data/processed/seq/test_y.npy"),
+        ),
+        "predict": lambda model, X: np.argmax(
+            model.predict(X, batch_size=512, verbose=0)[:, X.shape[1] // 2, :], axis=1
+        ),
+    },
+    "seq2seq": {
+        "model_path": "src/saved_models/modelSeq2Seq.keras",
+        "load_data": lambda: (
+            np.load("data/processed/seq/test_X.npy"),
+            np.load("data/processed/seq/test_y.npy"),
+        ),
+        "predict": lambda model, X: np.argmax(
+            model.predict(X, batch_size=512, verbose=0)[:, X.shape[1] // 2, :], axis=1
+        ),
+    },
 }
 
 
@@ -83,11 +114,15 @@ _NON_SCALAR_KEYS = ("cm", "labels")
 
 
 def _compute_metrics(y_test, y_pred) -> dict:
-    labels = sorted(set(int(c) for c in y_test) | set(int(c) for c in y_pred))
+    labels = sorted(set(int(c) for c in np.ravel(y_test)) | set(int(c) for c in np.ravel(y_pred)))
+    f1_per = f1_score(y_test, y_pred, average=None, labels=[0, 1, 2], zero_division=0)
     return {
         "accuracy": accuracy_score(y_test, y_pred),
         "precision": precision_score(y_test, y_pred, average="weighted"),
         "recall": recall_score(y_test, y_pred, average="weighted"),
+        "f1_N": float(f1_per[0]),
+        "f1_S": float(f1_per[1]),
+        "f1_V": float(f1_per[2]),
         "f1_macro": f1_score(y_test, y_pred, average="macro"),
         "f1_weighted": f1_score(y_test, y_pred, average="weighted"),
         "f2_macro": fbeta_score(y_test, y_pred, beta=2, average="macro"),
@@ -120,7 +155,11 @@ def _save_artifacts(name: str, metrics: dict):
 
 def evaluate_model(key: str) -> dict:
     cfg = EVAL_CONFIG[key]
-    X_test, y_test = load_test_data(cfg["test_data"])
+    if "load_data" in cfg:
+        X_test, y_test_arr = cfg["load_data"]()
+        y_test = pd.Series(y_test_arr)
+    else:
+        X_test, y_test = load_test_data(cfg["test_data"])
     model = _load_model(cfg["model_path"])
     y_pred = cfg["predict"](model, X_test)
     metrics = _compute_metrics(y_test, y_pred)
@@ -136,7 +175,11 @@ def evaluate_all() -> dict:
         if not os.path.exists(model_path):
             print(f"\nSkipping {key}: model artifact not found at {model_path}")
             continue
-        results[key] = evaluate_model(key)
+        try:
+            results[key] = evaluate_model(key)
+        except Exception as e:
+            print(f"\nSkipping {key}: evaluation failed ({type(e).__name__}: {e})")
+            continue
 
     if not results:
         raise SystemExit("No model artifacts found to evaluate. Train at least one model first")

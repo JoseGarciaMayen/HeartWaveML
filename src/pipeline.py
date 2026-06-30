@@ -34,6 +34,10 @@ MODELS = {
     "ensemble": {
         "trainer": ("src.training.train_ensemble", "TrainerEnsemble"),
     },
+    "lstm": {
+        "tuner":   ("src.tuning.tune_lstm",   "TunerLSTM"),
+        "trainer": ("src.training.train_lstm", "TrainerLSTM"),
+    },
 }
 
 

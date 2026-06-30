@@ -28,3 +28,6 @@ __pycache__/
 .venv
 catboost_info/
 mlflow.log
+retrain.py
+*.md
+!README.md
