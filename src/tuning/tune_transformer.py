@@ -134,6 +134,6 @@ if __name__ == "__main__":
         "num_blocks": 2,
         "dropout": 0.1,
         "learning_rate": 0.001,
-        "epochs": 20,
+        "epochs": 30,
     }
     TunerTransformer().run(pruner=pruner, enqueue_params=[known_good])
