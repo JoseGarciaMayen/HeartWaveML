@@ -16,7 +16,6 @@ from sklearn.metrics import (
 
 from src.config import DATA
 
-
 EVAL_CONFIG = {
     "xgb": {
         "model_path": "src/saved_models/modelXGB.joblib",
@@ -62,9 +61,7 @@ EVAL_CONFIG = {
             np.load("data/processed/seq_lstm/test_X.npy"),
             np.load("data/processed/seq_lstm/test_y.npy"),
         ),
-        "predict": lambda model, X: np.argmax(
-            model.predict(X, batch_size=512, verbose=0), axis=1
-        ),
+        "predict": lambda model, X: np.argmax(model.predict(X, batch_size=512, verbose=0), axis=1),
     },
     "transformer": {
         "model_path": "src/saved_models/modelTransformer.keras",

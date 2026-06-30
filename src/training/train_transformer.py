@@ -81,8 +81,19 @@ class TrainerTransformer(TrainerBase):
     def save_model(self, model, model_name):
         model.save(f"src/saved_models/{model_name}.keras")
 
-    def mlflow_start(self, model, X_train, y_train_center, X_cv, y_cv_center,
-                     y_train_seq, y_cv_seq, sw_train, sw_cv, p):
+    def mlflow_start(
+        self,
+        model,
+        X_train,
+        y_train_center,
+        X_cv,
+        y_cv_center,
+        y_train_seq,
+        y_cv_seq,
+        sw_train,
+        sw_cv,
+        p,
+    ):
         center_idx = X_train.shape[1] // 2
         mlflow.tensorflow.autolog(log_models=False, log_datasets=False, silent=True)
         with mlflow.start_run(nested=True):
@@ -90,7 +101,8 @@ class TrainerTransformer(TrainerBase):
                 monitor="val_loss", patience=10, restore_best_weights=True
             )
             model.fit(
-                X_train, y_train_seq,
+                X_train,
+                y_train_seq,
                 validation_data=(X_cv, y_cv_seq, sw_cv),
                 epochs=p.get("epochs", 50),
                 batch_size=256,
@@ -106,14 +118,18 @@ class TrainerTransformer(TrainerBase):
                 y_cv_center, y_pred, average=None, labels=[0, 1, 2], zero_division=0
             )
 
-            mlflow.log_metrics({
-                "val_f1_macro": val_f1,
-                "val_f1_N": float(val_f1_per[0]),
-                "val_f1_S": float(val_f1_per[1]),
-                "val_f1_V": float(val_f1_per[2]),
-            })
-            print(f"\nTransformer CV - F1-N:{val_f1_per[0]:.4f}  F1-S:{val_f1_per[1]:.4f}  "
-                  f"F1-V:{val_f1_per[2]:.4f}  macro:{val_f1:.4f}")
+            mlflow.log_metrics(
+                {
+                    "val_f1_macro": val_f1,
+                    "val_f1_N": float(val_f1_per[0]),
+                    "val_f1_S": float(val_f1_per[1]),
+                    "val_f1_V": float(val_f1_per[2]),
+                }
+            )
+            print(
+                f"\nTransformer CV - F1-N:{val_f1_per[0]:.4f}  F1-S:{val_f1_per[1]:.4f}  "
+                f"F1-V:{val_f1_per[2]:.4f}  macro:{val_f1:.4f}"
+            )
 
             mlflow.keras.log_model(model, self.model_name, registered_model_name=self.model_name)
             self.save_model(model, self.model_name)
@@ -122,14 +138,23 @@ class TrainerTransformer(TrainerBase):
             return val_f1
 
     def train(self):
-        (X_train, y_train_center, X_cv, y_cv_center,
-         y_train_seq, y_cv_seq, sw_train, sw_cv) = self.load_data()
+        (X_train, y_train_center, X_cv, y_cv_center, y_train_seq, y_cv_seq, sw_train, sw_cv) = (
+            self.load_data()
+        )
         p = self.get_typed_params(self.get_params())
         window, n_features = X_train.shape[1], X_train.shape[2]
         model = self.create_model(window, n_features, p)
         val_f1 = self.mlflow_start(
-            model, X_train, y_train_center, X_cv, y_cv_center,
-            y_train_seq, y_cv_seq, sw_train, sw_cv, p
+            model,
+            X_train,
+            y_train_center,
+            X_cv,
+            y_cv_center,
+            y_train_seq,
+            y_cv_seq,
+            sw_train,
+            sw_cv,
+            p,
         )
         notify_telegram(f"Transformer trained - val_f1_macro: {val_f1:.4f}")
         return val_f1

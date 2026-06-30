@@ -6,11 +6,11 @@ import optuna
 import tensorflow as tf
 from sklearn.metrics import f1_score
 from tensorflow.keras.layers import (  # type: ignore
+    LSTM,
     Bidirectional,
     Dense,
     Dropout,
     Input,
-    LSTM,
     TimeDistributed,
 )
 from tensorflow.keras.models import Model  # type: ignore
@@ -26,7 +26,7 @@ class TunerSeq2Seq(TunerBase):
     def __init__(self):
         super().__init__("ECG_Seq2Seq_tuning", n_trials=N_TRIALS)
 
-        self.X_train = np.load(f"{SEQ_DIR}/train_X.npy")   # (N, W, 46)
+        self.X_train = np.load(f"{SEQ_DIR}/train_X.npy")  # (N, W, 46)
         self.X_cv = np.load(f"{SEQ_DIR}/cv_X.npy")
 
         self.y_train_center = np.load(f"{SEQ_DIR}/train_y.npy")  # (N,) - for metrics
@@ -36,7 +36,9 @@ class TunerSeq2Seq(TunerBase):
         self.y_cv_seq = np.load(f"{SEQ_DIR}/cv_y_seq.npy")
 
         # sample_weight (N, 9): cada posición hereda el peso de la clase del beat central
-        self.sw_train = make_class_weight_array(self.y_train_center, shape_2d=self.y_train_seq.shape)
+        self.sw_train = make_class_weight_array(
+            self.y_train_center, shape_2d=self.y_train_seq.shape
+        )
         self.sw_cv = make_class_weight_array(self.y_cv_center, shape_2d=self.y_cv_seq.shape)
 
         self.window = self.X_train.shape[1]
@@ -87,7 +89,8 @@ class TunerSeq2Seq(TunerBase):
                 monitor="val_loss", patience=7, restore_best_weights=True
             )
             model.fit(
-                self.X_train, self.y_train_seq,
+                self.X_train,
+                self.y_train_seq,
                 validation_data=(self.X_cv, self.y_cv_seq, self.sw_cv),
                 epochs=epochs,
                 batch_size=256,
@@ -104,13 +107,15 @@ class TunerSeq2Seq(TunerBase):
             )
 
             val_f1_sv = (float(val_f1_per[1]) + float(val_f1_per[2])) / 2
-            mlflow.log_metrics({
-                "val_f1_macro": val_f1,
-                "val_f1_sv": val_f1_sv,
-                "val_f1_N": float(val_f1_per[0]),
-                "val_f1_S": float(val_f1_per[1]),
-                "val_f1_V": float(val_f1_per[2]),
-            })
+            mlflow.log_metrics(
+                {
+                    "val_f1_macro": val_f1,
+                    "val_f1_sv": val_f1_sv,
+                    "val_f1_N": float(val_f1_per[0]),
+                    "val_f1_S": float(val_f1_per[1]),
+                    "val_f1_V": float(val_f1_per[2]),
+                }
+            )
             notify_telegram(
                 f"Seq2Seq trial - sv:{val_f1_sv:.4f} macro:{val_f1:.4f} "
                 f"N:{val_f1_per[0]:.3f} S:{val_f1_per[1]:.3f} V:{val_f1_per[2]:.3f}"

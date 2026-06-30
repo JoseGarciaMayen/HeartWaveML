@@ -39,7 +39,7 @@ class TunerBase(ABC):
 
     def run(self, pruner=None, enqueue_params: list[dict] | None = None):
         study = optuna.create_study(direction=self.direction, pruner=pruner)
-        for params in (enqueue_params or []):
+        for params in enqueue_params or []:
             study.enqueue_trial(params)
         study.optimize(self.objective, n_trials=self.n_trials, show_progress_bar=True)
         return study

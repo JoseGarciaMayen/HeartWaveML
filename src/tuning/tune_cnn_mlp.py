@@ -76,8 +76,8 @@ class TunerCNNMLP(TunerBase):
         conv_filters = [
             filters,
             filters * filter_multiplier,
-            filters * filter_multiplier ** 2,
-            filters * filter_multiplier ** 2,
+            filters * filter_multiplier**2,
+            filters * filter_multiplier**2,
         ]
         input_cnn = Input(input_shape_cnn)
         x = input_cnn

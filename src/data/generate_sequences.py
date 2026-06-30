@@ -8,6 +8,7 @@ boundaries, and saves numpy arrays to data/processed/seq/.
 Run after the 'preprocess' DVC stage (which generates the interim CSV):
     python -m src.data.generate_sequences
 """
+
 import os
 
 import joblib
@@ -80,7 +81,9 @@ def generate_sequences(window: int = WINDOW, out_dir: str = OUT_DIR) -> None:
         np.save(f"{out_dir}/{split_name}_y_seq.npy", y_seq_arr)
 
         counts = np.bincount(y_arr, minlength=3)
-        print(f"{split_name}: {X_arr.shape}  y_seq:{y_seq_arr.shape}  N={counts[0]}  S={counts[1]}  V={counts[2]}")
+        print(
+            f"{split_name}: {X_arr.shape}  y_seq:{y_seq_arr.shape}  N={counts[0]}  S={counts[1]}  V={counts[2]}"
+        )
 
     print(f"\nScaler saved to {SCALER_PATH}")
     print(f"Sequences saved to {out_dir}/")

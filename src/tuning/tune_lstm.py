@@ -3,11 +3,11 @@ import numpy as np
 import tensorflow as tf
 from sklearn.metrics import f1_score
 from tensorflow.keras.layers import (  # type: ignore
+    LSTM,
     Bidirectional,
     Dense,
     Dropout,
     Input,
-    LSTM,
 )
 from tensorflow.keras.models import Model  # type: ignore
 
@@ -52,6 +52,7 @@ class TunerLSTM(TunerBase):
 
     def objective(self, trial) -> float:
         import gc
+
         ss = self.search_space
         params = {
             "units1": trial.suggest_int("units1", *ss["units1"]),
@@ -70,7 +71,8 @@ class TunerLSTM(TunerBase):
                 monitor="val_loss", patience=self._patience, restore_best_weights=True
             )
             model.fit(
-                self.X_train, self.y_train,
+                self.X_train,
+                self.y_train,
                 class_weight=self.class_weights,
                 validation_data=(self.X_cv, self.y_cv),
                 epochs=params["epochs"],

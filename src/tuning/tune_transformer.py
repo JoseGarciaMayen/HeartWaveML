@@ -6,12 +6,9 @@ import optuna
 import tensorflow as tf
 from sklearn.metrics import f1_score
 from tensorflow.keras.layers import (  # type: ignore
-    Add,
     Dense,
     Dropout,
     Input,
-    LayerNormalization,
-    MultiHeadAttention,
     TimeDistributed,
 )
 from tensorflow.keras.models import Model  # type: ignore
@@ -34,7 +31,9 @@ class TunerTransformer(TunerBase):
         self.y_cv_center = np.load(f"{SEQ_DIR}/cv_y.npy")
         self.y_train_seq = np.load(f"{SEQ_DIR}/train_y_seq.npy")
         self.y_cv_seq = np.load(f"{SEQ_DIR}/cv_y_seq.npy")
-        self.sw_train = make_class_weight_array(self.y_train_center, shape_2d=self.y_train_seq.shape)
+        self.sw_train = make_class_weight_array(
+            self.y_train_center, shape_2d=self.y_train_seq.shape
+        )
         self.sw_cv = make_class_weight_array(self.y_cv_center, shape_2d=self.y_cv_seq.shape)
         self.window = self.X_train.shape[1]
         self.n_features = self.X_train.shape[2]
@@ -68,9 +67,14 @@ class TunerTransformer(TunerBase):
         epochs = trial.suggest_categorical("epochs", [20, 30, 50])
 
         params = {
-            "d_model": d_model, "num_heads": num_heads, "key_dim": key_dim,
-            "ff_dim": ff_dim, "num_blocks": num_blocks,
-            "dropout": dropout, "learning_rate": lr, "epochs": epochs,
+            "d_model": d_model,
+            "num_heads": num_heads,
+            "key_dim": key_dim,
+            "ff_dim": ff_dim,
+            "num_blocks": num_blocks,
+            "dropout": dropout,
+            "learning_rate": lr,
+            "epochs": epochs,
         }
 
         mlflow.tensorflow.autolog(log_models=False, log_datasets=False, silent=True)
@@ -81,7 +85,8 @@ class TunerTransformer(TunerBase):
                 monitor="val_loss", patience=7, restore_best_weights=True
             )
             model.fit(
-                self.X_train, self.y_train_seq,
+                self.X_train,
+                self.y_train_seq,
                 validation_data=(self.X_cv, self.y_cv_seq, self.sw_cv),
                 epochs=epochs,
                 batch_size=256,
@@ -98,13 +103,15 @@ class TunerTransformer(TunerBase):
             )
 
             val_f1_sv = (float(val_f1_per[1]) + float(val_f1_per[2])) / 2
-            mlflow.log_metrics({
-                "val_f1_macro": val_f1,
-                "val_f1_sv": val_f1_sv,
-                "val_f1_N": float(val_f1_per[0]),
-                "val_f1_S": float(val_f1_per[1]),
-                "val_f1_V": float(val_f1_per[2]),
-            })
+            mlflow.log_metrics(
+                {
+                    "val_f1_macro": val_f1,
+                    "val_f1_sv": val_f1_sv,
+                    "val_f1_N": float(val_f1_per[0]),
+                    "val_f1_S": float(val_f1_per[1]),
+                    "val_f1_V": float(val_f1_per[2]),
+                }
+            )
             notify_telegram(
                 f"Transformer trial - sv:{val_f1_sv:.4f} macro:{val_f1:.4f} "
                 f"N:{val_f1_per[0]:.3f} S:{val_f1_per[1]:.3f} V:{val_f1_per[2]:.3f}"
@@ -118,6 +125,14 @@ class TunerTransformer(TunerBase):
 
 if __name__ == "__main__":
     pruner = optuna.pruners.MedianPruner(n_startup_trials=5, n_warmup_steps=10)
-    known_good = {"d_model": 64, "num_heads": 4, "key_dim": 16, "ff_dim": 128,
-                  "num_blocks": 2, "dropout": 0.1, "learning_rate": 0.001, "epochs": 20}
+    known_good = {
+        "d_model": 64,
+        "num_heads": 4,
+        "key_dim": 16,
+        "ff_dim": 128,
+        "num_blocks": 2,
+        "dropout": 0.1,
+        "learning_rate": 0.001,
+        "epochs": 20,
+    }
     TunerTransformer().run(pruner=pruner, enqueue_params=[known_good])
