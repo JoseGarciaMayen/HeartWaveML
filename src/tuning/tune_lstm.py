@@ -83,7 +83,7 @@ class TunerLSTM(TunerBase):
                 epochs=params["epochs"],
                 batch_size=256,
                 callbacks=[best_f1, early_stop],
-                verbose=0,
+                verbose=2,
             )
             y_pred = np.argmax(model.predict(self.X_cv, batch_size=512, verbose=0), axis=1)
             val_f1 = f1_score(self.y_cv, y_pred, average="macro", zero_division=0)

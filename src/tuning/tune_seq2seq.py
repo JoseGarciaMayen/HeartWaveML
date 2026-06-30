@@ -97,7 +97,7 @@ class TunerSeq2Seq(TunerBase):
                 batch_size=256,
                 callbacks=[best_f1, cb],
                 sample_weight=self.sw_train,
-                verbose=0,
+                verbose=2,
             )
 
             logits = model.predict(self.X_cv, batch_size=512, verbose=0)  # (N, W, 3)

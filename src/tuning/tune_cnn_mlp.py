@@ -137,6 +137,7 @@ class TunerCNNMLP(TunerBase):
                 validation_data=([self.X_cv_cnn, self.X_cv_mlp], self.y_cv),
                 epochs=epochs,
                 callbacks=[best_f1, early_stopping],
+                verbose=2,
             )
 
             loss, acc = model.evaluate(
