@@ -2,11 +2,14 @@ import sys
 import time
 from datetime import datetime
 
-import numpy as np
 import psutil
 from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+from src.config import SEQUENCES
+
+WINDOW = SEQUENCES.get("window", 45)
 
 try:
     from src.predict import predict
@@ -35,10 +38,30 @@ app.add_middleware(
 )
 
 
-class ECGSample(BaseModel):
+class Beat(BaseModel):
     signal: list[float] = Field(
-        ..., description="1D array representing the ECG signal (187 samples)"
+        ..., description="1D array representing a single ECG beat (187 samples)"
     )
+    r_peak_sample: int = Field(
+        ..., description="Absolute sample index of this beat's R-peak in the recording"
+    )
+
+
+class BeatWindow(BaseModel):
+    beats: list[Beat] = Field(
+        ...,
+        description=(
+            f"Exactly {WINDOW} consecutive, already-segmented beats in recording order. "
+            "The API returns the class of the center beat."
+        ),
+    )
+
+    @field_validator("beats")
+    @classmethod
+    def _check_length(cls, beats: list[Beat]) -> list[Beat]:
+        if len(beats) != WINDOW:
+            raise ValueError(f"Expected exactly {WINDOW} beats, got {len(beats)}")
+        return beats
 
 
 class PredictionResponse(BaseModel):
@@ -74,9 +97,9 @@ def api_info():
     endpoints = ["/", "/predict", "/health", "/metrics", "/docs", "/redoc"]
 
     model_info = {
-        "model_type": "CONVXGBoost",
-        "input_shape": "Variable (ECG signal)",
-        "output": "Classification",
+        "model_type": "Transformer",
+        "input_shape": f"({WINDOW}, 46) beat window",
+        "output": "Classification of the center beat",
         "available": PREDICT_AVAILABLE,
     }
 
@@ -90,32 +113,32 @@ def api_info():
 
 
 @app.post("/predict", tags=["Prediction"])
-def classify_ecg_batch(samples: list[ECGSample]):
-    """Classifies a batch of ECG signals"""
-    if len(samples) > 200:
+def classify_ecg_batch(windows: list[BeatWindow]):
+    """Classifies the center beat of a batch of independent beat windows"""
+    if len(windows) > 200:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Batch size too large. Maximum: 200 samples, received: {len(samples)}",
+            detail=f"Batch size too large. Maximum: 200 windows, received: {len(windows)}",
         )
 
     results = []
-    for i, sample in enumerate(samples):
+    for i, window in enumerate(windows):
         try:
-            result = classify_ecg(sample)
+            result = classify_ecg(window)
             results.append({"index": i, "success": True, "result": result})
         except Exception as e:
             results.append({"index": i, "success": False, "error": str(e)})
 
     return {
-        "total_samples": len(samples),
+        "total_windows": len(windows),
         "successful_predictions": sum(1 for r in results if r["success"]),
         "failed_predictions": sum(1 for r in results if not r["success"]),
         "results": results,
     }
 
 
-def classify_ecg(sample: ECGSample):
-    """Classifies a single ECG signal"""
+def classify_ecg(window: BeatWindow):
+    """Classifies the center beat of a single beat window"""
     global prediction_count, error_count
 
     start_processing = time.time()
@@ -128,19 +151,11 @@ def classify_ecg(sample: ECGSample):
                 detail="Prediction service not available",
             )
 
-        if len(sample.signal) != 187:
-            error_count += 1
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Signal must have length 187 samples, received length: {len(sample.signal)}",
-            )
+        beats = [
+            {"signal": beat.signal, "r_peak_sample": beat.r_peak_sample} for beat in window.beats
+        ]
 
-        beat_signal = np.array(sample.signal)
-
-        prediction = predict(beat_signal)
-
-        if isinstance(prediction, np.generic):
-            prediction = prediction.item()
+        prediction = predict(beats)
 
         prediction_count += 1
         processing_time = (time.time() - start_processing) * 1000

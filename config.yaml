@@ -2,9 +2,6 @@ data:
   feat_train: "data/processed/feat/mitbih_train_features.csv"
   feat_cv:    "data/processed/feat/mitbih_cv_features.csv"
   feat_test:  "data/processed/feat/mitbih_test_features.csv"
-  cnn_train:  "data/processed/cnn/mitbih_train_cnn.csv"
-  cnn_cv:     "data/processed/cnn/mitbih_cv_cnn.csv"
-  cnn_test:   "data/processed/cnn/mitbih_test_cnn.csv"
   base_train: "data/processed/base/mitbih_train.csv"
   base_cv:    "data/processed/base/mitbih_cv.csv"
   base_test:  "data/processed/base/mitbih_test.csv"
@@ -12,92 +9,9 @@ data:
 sequences:
   window: 45  # context window for BiLSTM: K beats before + current + K beats after (K = window//2)
 
-cnn_arch:
-  l2: 0
-  dropout: 0
-  learning_rate: 0.01
-  filters1: 16
-  filters2: 32
-  filters3: 64
-
-ensemble:
-  models:
-    - xgb
-    - extratrees
-    - lgbm
-    - catboost
-  weights:
-    xgb:        0.5
-    extratrees: 0.1
-    lgbm:       0.3
-    catboost:   0.1
-
-# Training params for the CNN feature extractor (not tuned by Optuna)
-feature_extractor:
-  epochs: 30 # 50
-  batch_size: 64
-
 # Optuna tuning config. n_trials is the quickest knob to reduce run time.
 # search_space: [min, max] for each hyperparameter.
 tuning:
-  xgb:
-    n_trials: 50 # 200
-    search_space:
-      max_depth:          [3, 10]
-      learning_rate:      [0.005, 0.5]
-      n_estimators:       [100, 1000]
-      subsample:          [0.6, 1.0]
-      colsample_bytree:   [0.6, 1.0]
-      colsample_bynode:   [0.6, 1.0]
-      colsample_bylevel:  [0.6, 1.0]
-      reg_alpha:          [0.01, 1.0]
-      reg_lambda:         [0.01, 1.0]
-      gamma:              [0.01, 1.0]
-      min_child_weight:   [1, 10]
-
-  convxgb:
-    n_trials: 50 # 200
-    search_space:
-      max_depth:          [3, 10]
-      learning_rate:      [0.01, 1.0]
-      n_estimators:       [50, 1000]
-      subsample:          [0.6, 1.0]
-      colsample_bytree:   [0.6, 1.0]
-      colsample_bynode:   [0.6, 1.0]
-      colsample_bylevel:  [0.6, 1.0]
-      reg_alpha:          [0.01, 1.0]
-      reg_lambda:         [0.01, 1.0]
-      gamma:              [0.01, 1.0]
-
-  extratrees:
-    n_trials: 50 # 100
-    search_space:
-      n_estimators:       [100, 1000]
-      max_depth:          [3, 30]
-      min_samples_split:  [2, 20]
-      min_samples_leaf:   [1, 10]
-
-  lgbm:
-    n_trials: 50 # 150
-    search_space:
-      n_estimators:       [100, 1000]
-      learning_rate:      [0.005, 0.5]
-      max_depth:          [3, 15]
-      num_leaves:         [20, 300]
-      subsample:          [0.6, 1.0]
-      colsample_bytree:   [0.6, 1.0]
-      reg_alpha:          [0.01, 1.0]
-      reg_lambda:         [0.01, 1.0]
-
-  catboost:
-    n_trials: 50 #100
-    search_space:
-      iterations:         [100, 1000]
-      learning_rate:      [0.01, 0.5]
-      depth:              [3, 10]
-      l2_leaf_reg:        [1.0, 10.0]
-      border_count:       [32, 255]
-
   lstm:
     n_trials: 30
     patience: 10

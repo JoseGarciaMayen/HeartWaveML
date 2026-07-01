@@ -18,11 +18,6 @@ from sklearn.metrics import (
 from src.config import DATA
 
 EVAL_CONFIG = {
-    "xgb": {
-        "model_path": "src/saved_models/modelXGB.joblib",
-        "test_data": DATA["feat_test"],
-        "predict": lambda model, X: model.predict(X),
-    },
     "cnn_mlp": {
         "model_path": "src/saved_models/modelCNNMLP.keras",
         "test_data": DATA["feat_test"],
@@ -30,31 +25,6 @@ EVAL_CONFIG = {
             model.predict([X.iloc[:, :187].values.reshape(-1, 187, 1), X.iloc[:, 187:].values]),
             axis=1,
         ),
-    },
-    "convxgb": {
-        "model_path": "src/saved_models/modelCONVXGB.joblib",
-        "test_data": DATA["cnn_test"],
-        "predict": lambda model, X: model.predict(X),
-    },
-    "extratrees": {
-        "model_path": "src/saved_models/modelExtraTrees.joblib",
-        "test_data": DATA["feat_test"],
-        "predict": lambda model, X: model.predict(X),
-    },
-    "lgbm": {
-        "model_path": "src/saved_models/modelLGBM.joblib",
-        "test_data": DATA["feat_test"],
-        "predict": lambda model, X: model.predict(X),
-    },
-    "catboost": {
-        "model_path": "src/saved_models/modelCatBoost.joblib",
-        "test_data": DATA["feat_test"],
-        "predict": lambda model, X: model.predict(X),
-    },
-    "ensemble": {
-        "model_path": "src/saved_models/modelEnsemble.joblib",
-        "test_data": DATA["feat_test"],
-        "predict": lambda model, X: model.predict(X),
     },
     "lstm": {
         "model_path": "src/saved_models/modelLSTM.keras",

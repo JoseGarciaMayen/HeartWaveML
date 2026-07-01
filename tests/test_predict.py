@@ -1,27 +1,36 @@
 import numpy as np
 
 import src.predict as predict_module
-from src.predict import predict
+from src.predict import CENTER_IDX, predict
 
-MODEL = "src/saved_models/modelCONVXGB.joblib"
+MODEL = "src/saved_models/modelTransformer.keras"
 
 
-def test_predict_returns_classifier_label(monkeypatch):
+def _dummy_beats(n=45):
+    return [{"signal": [0.0] * 187, "r_peak_sample": i * 300} for i in range(n)]
+
+
+def test_predict_returns_center_beat_label(monkeypatch):
     class StubModel:
-        def predict(self, X):
-            return np.array([3])
+        def predict(self, X, verbose=0):
+            n_classes = 3
+            logits = np.zeros((1, X.shape[1], n_classes))
+            logits[0, CENTER_IDX, 1] = 10.0  # center beat -> class S
+            return logits
 
-    monkeypatch.setattr(predict_module.joblib, "load", lambda path: StubModel())
-    monkeypatch.setattr(predict_module, "preprocess_convxgb", lambda beat: beat)
+    monkeypatch.setattr(
+        predict_module, "preprocess_sequence", lambda beats: np.zeros((1, len(beats), 46))
+    )
+    monkeypatch.setattr(predict_module, "_load_model", lambda path: StubModel())
 
-    label = predict(np.zeros(187), model=MODEL)
+    label = predict(_dummy_beats(), model=MODEL)
 
-    assert label == 3
+    assert label == 1
     assert isinstance(label, int)
 
 
-def test_predict_rejects_unknown_model():
+def test_predict_rejects_wrong_window_length():
     import pytest
 
     with pytest.raises(ValueError):
-        predict(np.zeros(187), model="does_not_exist.joblib")
+        predict(_dummy_beats(n=10), model=MODEL)

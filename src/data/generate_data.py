@@ -3,7 +3,7 @@ import os
 import pandas as pd
 import wfdb
 
-from src.preprocessing import extract_features_from_dataframe, feature_extracting, split_data
+from src.preprocessing import extract_features_from_dataframe, split_data
 from src.utils import get_class_mapping, get_record_numbers
 
 
@@ -52,32 +52,15 @@ def generateData(data=None, record_numbers=None, window_size=187):
 
         df.to_csv("data/interim/mitbih_combined_records.csv", index=False)
 
-    if data is None:
-        split_data("data/interim/mitbih_combined_records.csv")
-        feature_extracting()
-        extract_features_from_dataframe()
-        split_data("data/interim/mitbih_features.csv")
-        split_data("data/interim/mitbih_features_only.csv")
-    elif data == "deterministic":
-        # Everything that does not need the trained CNN feature extractor:
+    if data in (None, "deterministic", "all"):
         split_data("data/interim/mitbih_combined_records.csv")
         extract_features_from_dataframe()
         split_data("data/interim/mitbih_features.csv")
-        split_data("data/interim/mitbih_features_only.csv")
-    elif data == "cnn":
-        # Only the CNN feature extraction step (requires feature_extractor.keras).
-        feature_extracting()
     elif data == "no_feat":
         split_data("data/interim/mitbih_combined_records.csv")
-    elif data == "cnn_full":
-        split_data("data/interim/mitbih_combined_records.csv")
-        feature_extracting()
     elif data == "feat":
         extract_features_from_dataframe()
         split_data("data/interim/mitbih_features.csv")
-    elif data == "feat_only":
-        extract_features_from_dataframe()
-        split_data("data/interim/mitbih_features_only.csv")
 
 
 if __name__ == "__main__":
@@ -87,13 +70,13 @@ if __name__ == "__main__":
     parser.add_argument(
         "--mode",
         default="deterministic",
-        choices=["deterministic", "cnn", "no_feat", "cnn_full", "feat", "feat_only", "all"],
+        choices=["deterministic", "no_feat", "feat", "all"],
         help=(
-            "deterministic: base/feat/feat_only (no CNN). "
-            "cnn: only the CNN feature extraction (needs feature_extractor.keras). "
-            "all: full pipeline. Others are kept for manual use."
+            "deterministic/all: full pipeline (base + feat, also generates the interim "
+            "features_only CSV consumed by generate_sequences.py). "
+            "no_feat: base only. feat: feature CSVs only."
         ),
     )
     args = parser.parse_args()
 
-    generateData(data=None if args.mode == "all" else args.mode)
+    generateData(data=args.mode)

@@ -2,14 +2,6 @@ import argparse
 import importlib
 
 MODELS = {
-    "xgb": {
-        "tuner": ("src.tuning.tune_xgb", "TunerXGB"),
-        "trainer": ("src.training.train_xgb", "TrainerXGB"),
-    },
-    "convxgb": {
-        "tuner": ("src.tuning.tune_convxgb", "TunerCONVXGB"),
-        "trainer": ("src.training.train_convxgb", "TrainerCONVXGB"),
-    },
     "cnn_mlp": {
         "tuner": ("src.tuning.tune_cnn_mlp", "TunerCNNMLP"),
         "trainer": ("src.training.train_cnn_mlp", "TrainerCNNMLP"),
@@ -18,21 +10,6 @@ MODELS = {
                 n_startup_trials=5, n_warmup_steps=10
             )
         },
-    },
-    "extratrees": {
-        "tuner": ("src.tuning.tune_extratrees", "TunerExtraTrees"),
-        "trainer": ("src.training.train_extratrees", "TrainerExtraTrees"),
-    },
-    "lgbm": {
-        "tuner": ("src.tuning.tune_lgbm", "TunerLGBM"),
-        "trainer": ("src.training.train_lgbm", "TrainerLGBM"),
-    },
-    "catboost": {
-        "tuner": ("src.tuning.tune_catboost", "TunerCatBoost"),
-        "trainer": ("src.training.train_catboost", "TrainerCatBoost"),
-    },
-    "ensemble": {
-        "trainer": ("src.training.train_ensemble", "TrainerEnsemble"),
     },
     "lstm": {
         "tuner": ("src.tuning.tune_lstm", "TunerLSTM"),

@@ -1,80 +1,63 @@
 import joblib
 import numpy as np
-import onnxruntime as ort
 import pandas as pd
 
-from src.data.features import extract_features_from_beat, extract_features_from_dataframe
+from src.config import SEQUENCES
+from src.data.features import (
+    _compute_rr_features,
+    extract_features_from_beat,
+    extract_features_from_dataframe,
+)
 from src.data.splitter import (
     CV_RECORDS,
     DS1_RECORDS,
     DS2_RECORDS,
     TRAIN_RECORDS,
-    feature_extracting,
     split_data,
 )
-from src.utils import apply_filter, get_filter_coeffs
 
 __all__ = [
     "extract_features_from_beat",
     "extract_features_from_dataframe",
     "split_data",
-    "feature_extracting",
+    "preprocess_sequence",
     "DS1_RECORDS",
     "DS2_RECORDS",
     "CV_RECORDS",
     "TRAIN_RECORDS",
-    "preprocess_xgb",
-    "preprocess_convxgb",
 ]
 
+WINDOW = SEQUENCES.get("window", 45)
 
-def preprocess_xgb(beat_signal):
-    """
-    Preprocesses a single heartbeat signal for prediction.
+
+def preprocess_sequence(beats: list[dict]) -> np.ndarray:
+    """Builds a (1, WINDOW, 46) scaled sequence for Seq2Seq/Transformer inference.
+
     Args:
-        beat_signal (numpy.ndarray): The heartbeat signal.
+        beats: ordered list of exactly WINDOW consecutive, already-segmented beats,
+            each ``{"signal": [...187 floats...], "r_peak_sample": int}``.
+
     Returns:
-        pandas.DataFrame: The preprocessed heartbeat signal with extracted features.
+        numpy.ndarray of shape (1, WINDOW, 46), scaled with the training-time
+        `scaler_seq.joblib` (46 morphological + RR features, same column order
+        as `data/interim/mitbih_features_only.csv`).
     """
-    features = extract_features_from_beat(beat_signal)
-    column_beats = [f"sample_{i}" for i in range(len(beat_signal))]
-    column_feats = list(features.keys())
-    features = np.array(list(features.values()))
+    if len(beats) != WINDOW:
+        raise ValueError(f"Expected exactly {WINDOW} beats, got {len(beats)}")
 
-    combined = np.concatenate([beat_signal, features])
-    combined = combined.reshape(1, -1)
+    feature_rows = [extract_features_from_beat(np.asarray(b["signal"])) for b in beats]
+    features_df = pd.DataFrame(feature_rows)
 
-    scaler = joblib.load("src/saved_models/scaler.joblib")
+    rr_input = pd.DataFrame(
+        {
+            "record": ["session"] * len(beats),
+            "beat_center": [b["r_peak_sample"] for b in beats],
+        }
+    )
+    rr_df = _compute_rr_features(rr_input)
 
-    b, a = get_filter_coeffs()
-    combined = np.apply_along_axis(apply_filter, axis=1, arr=combined, b=b, a=a)
-    combined = scaler.transform(combined)
-    combined = pd.DataFrame(combined, columns=column_beats + column_feats)
+    combined = pd.concat([features_df, rr_df.reset_index(drop=True)], axis=1)
 
-    return combined
-
-
-def preprocess_convxgb(beat_signal):
-    """
-    Preprocesses a single heartbeat signal for prediction using a convolutional feature extractor.
-    Args:
-        beat_signal (numpy.ndarray): The heartbeat signal.
-    Returns:
-        pandas.DataFrame: The features extracted by the feature extractor.
-    """
-    scaler = joblib.load("src/saved_models/scaler_convxgb.joblib")
-
-    b, a = get_filter_coeffs()
-    beat_signal = np.apply_along_axis(apply_filter, axis=0, arr=beat_signal, b=b, a=a)
-    beat_signal = scaler.transform(beat_signal.reshape(1, -1))
-
-    feature_extractor = ort.InferenceSession("src/saved_models/feature_extractor.onnx")
-
-    beat_signal = beat_signal.astype(np.float32).reshape(1, -1, 1)
-    inputs = {"input": beat_signal}
-    beat_signal = feature_extractor.run(None, inputs)[0]
-
-    column_beats = [f"{i}" for i in range(beat_signal.shape[1])]
-    beat_signal = pd.DataFrame(beat_signal, columns=column_beats)
-
-    return beat_signal
+    scaler = joblib.load("src/saved_models/scaler_seq.joblib")
+    scaled = scaler.transform(combined.values)
+    return scaled.reshape(1, len(beats), -1).astype(np.float32)

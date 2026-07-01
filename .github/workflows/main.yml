@@ -32,7 +32,7 @@ jobs:
           dvc remote modify origin --local secret_access_key ${{ secrets.DAGSHUB_SECRET_ID }}
 
       - name: DVC Pull models for integration tests
-        run: dvc pull -f -r origin src/saved_models/modelCONVXGB.joblib src/saved_models/scaler_convxgb.joblib src/saved_models/feature_extractor.onnx
+        run: dvc pull -f -r origin src/saved_models/modelTransformer.keras src/saved_models/scaler_seq.joblib
 
       - name: Install test dependencies
         run: pip install -r requirements_api.txt pytest httpx ruff pyyaml
@@ -65,7 +65,7 @@ jobs:
           dvc remote modify origin --local secret_access_key ${{ secrets.DAGSHUB_SECRET_ID }}
 
       - name: DVC Pull specific model
-        run: dvc pull -f -r origin src/saved_models/modelCONVXGB.joblib src/saved_models/scaler_convxgb.joblib src/saved_models/feature_extractor.onnx
+        run: dvc pull -f -r origin src/saved_models/modelTransformer.keras src/saved_models/scaler_seq.joblib
 
       - name: Docker login
         run: docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}

@@ -1,26 +1,22 @@
-import joblib
 import numpy as np
 
-from src.preprocessing import preprocess_convxgb, preprocess_xgb
+from src.config import SEQUENCES
+from src.evaluate import _load_model
+from src.preprocessing import preprocess_sequence
+
+CENTER_IDX = SEQUENCES.get("window", 45) // 2
 
 
-def predict(X_test, model="src/saved_models/modelCONVXGB.joblib"):
-    if model == "src/saved_models/modelXGB.joblib":
-        X_test = preprocess_xgb(X_test)
-    elif model == "src/saved_models/modelCONVXGB.joblib":
-        X_test = preprocess_convxgb(X_test)
-    else:
-        raise ValueError("Model not found")
+def predict(beats: list[dict], model: str = "src/saved_models/modelTransformer.keras") -> int:
+    """Classifies the center beat of an ordered window of beats.
 
-    model = joblib.load(model)
-
-    # XGBClassifier.predict returns class labels (e.g. [2]), one per sample.
-    y_pred = model.predict(X_test)
+    Args:
+        beats: ordered list of exactly WINDOW consecutive, already-segmented beats,
+            each ``{"signal": [...187 floats...], "r_peak_sample": int}``.
+        model: path to a Many-to-Many .keras model (Transformer/Seq2Seq).
+    """
+    X = preprocess_sequence(beats)
+    keras_model = _load_model(model)
+    logits = keras_model.predict(X, verbose=0)
+    y_pred = np.argmax(logits[:, CENTER_IDX, :], axis=1)
     return int(y_pred[0])
-
-
-if __name__ == "__main__":
-    X_test = np.random.uniform(-0.6, 0.6, 187)
-    print(X_test)
-    y_pred = predict(X_test, model="src/saved_models/modelCONVXGB.joblib")
-    print(y_pred)

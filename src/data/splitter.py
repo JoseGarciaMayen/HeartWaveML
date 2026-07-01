@@ -1,6 +1,5 @@
 import os
 
-import joblib
 import numpy as np
 import pandas as pd
 from sklearn.preprocessing import StandardScaler
@@ -96,12 +95,6 @@ def split_data(path="data/interim/mitbih_combined_records.csv"):
     X_cv_scaled = scaler.transform(X_cv_filtered)
     X_test_scaled = scaler.transform(X_test_filtered)
 
-    os.makedirs("src/saved_models", exist_ok=True)
-    if path == "data/interim/mitbih_features.csv":
-        joblib.dump(scaler, "src/saved_models/scaler.joblib")
-    elif path == "data/interim/mitbih_combined_records.csv":
-        joblib.dump(scaler, "src/saved_models/scaler_convxgb.joblib")
-
     train_df_processed = pd.DataFrame(X_train_scaled, columns=X.columns)
     cv_df_processed = pd.DataFrame(X_cv_scaled, columns=X.columns)
     test_df_processed = pd.DataFrame(X_test_scaled, columns=X.columns)
@@ -131,61 +124,3 @@ def split_data(path="data/interim/mitbih_combined_records.csv"):
         print(" - data/processed/feat/mitbih_train_features.csv")
         print(" - data/processed/feat/mitbih_cv_features.csv")
         print(" - data/processed/feat/mitbih_test_features.csv")
-
-    elif path == "data/interim/mitbih_features_only.csv":
-        os.makedirs("data/processed/feat_only", exist_ok=True)
-        train_df_processed.to_csv(
-            "data/processed/feat_only/mitbih_train_features_only.csv", index=False
-        )
-        cv_df_processed.to_csv("data/processed/feat_only/mitbih_cv_features_only.csv", index=False)
-        test_df_processed.to_csv(
-            "data/processed/feat_only/mitbih_test_features_only.csv", index=False
-        )
-
-        print("Filtered and scaled data saved in:")
-        print(" - data/processed/feat_only/mitbih_train_features_only.csv")
-        print(" - data/processed/feat_only/mitbih_cv_features_only.csv")
-        print(" - data/processed/feat_only/mitbih_test_features_only.csv")
-
-
-def feature_extracting():
-    """
-    Extracts features using a pre-trained CNN feature extractor and saves them to CSV files.
-    """
-    import tensorflow as tf
-
-    feature_extractor = tf.keras.models.load_model("src/saved_models/feature_extractor.keras")
-    train_df = pd.read_csv("data/processed/base/mitbih_train.csv")
-    cv_df = pd.read_csv("data/processed/base/mitbih_cv.csv")
-    test_df = pd.read_csv("data/processed/base/mitbih_test.csv")
-
-    X_train = train_df.drop("class", axis=1)
-    y_train = train_df["class"]
-    X_cv = cv_df.drop("class", axis=1)
-    y_cv = cv_df["class"]
-    X_test = test_df.drop("class", axis=1)
-    y_test = test_df["class"]
-
-    X_train_features = feature_extractor.predict(X_train, batch_size=64, verbose=0)
-    X_cv_features = feature_extractor.predict(X_cv, batch_size=64, verbose=0)
-    X_test_features = feature_extractor.predict(X_test, batch_size=64, verbose=0)
-
-    X_train_features_flattened = X_train_features.reshape(X_train_features.shape[0], -1)
-    X_train_features = pd.DataFrame(X_train_features_flattened)
-    X_train_features["class"] = y_train.reset_index(drop=True)
-    X_cv_features_flattened = X_cv_features.reshape(X_cv_features.shape[0], -1)
-    X_cv_features = pd.DataFrame(X_cv_features_flattened)
-    X_cv_features["class"] = y_cv.reset_index(drop=True)
-    X_test_features_flattened = X_test_features.reshape(X_test_features.shape[0], -1)
-    X_test_features = pd.DataFrame(X_test_features_flattened)
-    X_test_features["class"] = y_test.reset_index(drop=True)
-
-    os.makedirs("data/processed/cnn", exist_ok=True)
-    X_train_features.to_csv("data/processed/cnn/mitbih_train_cnn.csv", index=False)
-    X_cv_features.to_csv("data/processed/cnn/mitbih_cv_cnn.csv", index=False)
-    X_test_features.to_csv("data/processed/cnn/mitbih_test_cnn.csv", index=False)
-
-    print("Features saved in:")
-    print(" - data/processed/cnn/mitbih_train_cnn.csv")
-    print(" - data/processed/cnn/mitbih_cv_cnn.csv")
-    print(" - data/processed/cnn/mitbih_test_cnn.csv")

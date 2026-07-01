@@ -20,34 +20,13 @@ stages:
       - data/interim/mitbih_features_only.csv
       - data/processed/base
       - data/processed/feat
-      - data/processed/feat_only
-      - src/saved_models/scaler.joblib
-      - src/saved_models/scaler_convxgb.joblib
-
-  feature_extractor:
-    cmd: python -m src.training.feature_extractor
-    deps:
-      - data/processed/base
-      - src/training/feature_extractor.py
-    outs:
-      - src/saved_models/feature_extractor.keras
-      - src/saved_models/feature_extractor.onnx
-
-  cnn:
-    cmd: python -m src.data.generate_data --mode cnn
-    deps:
-      - data/processed/base
-      - src/saved_models/feature_extractor.keras
-      - src/data/splitter.py
-    outs:
-      - data/processed/cnn
 
   evaluate:
     cmd: python -m src.evaluate
     deps:
       - data/processed/feat/mitbih_test_features.csv
-      - data/processed/cnn/mitbih_test_cnn.csv
-      - src/saved_models/modelXGB.joblib
       - src/saved_models/modelCNNMLP.keras
-      - src/saved_models/modelCONVXGB.joblib
+      - src/saved_models/modelLSTM.keras
+      - src/saved_models/modelSeq2Seq.keras
+      - src/saved_models/modelTransformer.keras
       - src/evaluate.py
