@@ -9,13 +9,6 @@ from scipy.stats import kurtosis, skew
 def extract_features_from_beat(beat_signal, fs=360):
     """
     Extracts features from a single heartbeat signal.
-
-    Args:
-        beat_signal (numpy.ndarray): The heartbeat signal.
-        fs (int): The sampling frequency of the signal. Default is 360.
-
-    Returns:
-        dict: A dictionary containing the extracted features.
     """
     features = {}
 

@@ -12,8 +12,9 @@ def _clearml_configured() -> bool:
 
 
 def init_clearml(task_name: str, task_type: str = "training", tags: list[str] | None = None):
-    """Start a ClearML Task. Returns the Task, or None if ClearML is missing/unconfigured
-    (tracking failures never break training)."""
+    """
+    Start a ClearML Task. Returns the Task, or None if ClearML is missing/unconfigured
+    """
     if not _clearml_configured():
         return None
     try:

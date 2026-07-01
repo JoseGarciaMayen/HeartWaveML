@@ -97,10 +97,6 @@ def get_class_weights(y_train):
 def notify_telegram(msg):
     """
     Sends a notification message to a specified Telegram chat.
-
-    Credentials are optional: if they are missing or the request fails, the
-    error is logged and swallowed so it never interrupts the caller (e.g. a
-    long training run).
     """
     if not TELEGRAM_TOKEN or not CHAT_ID:
         print("Telegram notification skipped: TELEGRAM_TOKEN or CHAT_ID not set.")
@@ -156,17 +152,8 @@ def FocalLoss(gamma: float = 2.0, **kwargs):
 
 
 def make_best_f1_restorer(X_val, y_val, center_idx=None, batch_size=512):
-    """Keras callback that selects the best epoch by macro-F1, not val_loss.
-
-    Each epoch it predicts on the validation set, computes macro-F1, injects it
-    into ``logs`` as ``val_f1_macro`` (so EarlyStopping and other callbacks can monitor
-    it), tracks the best weights, and restores them on train end.
-
-    ``center_idx``: for many-to-many models, the timestep to score
-    (``logits[:, center_idx, :]``); ``None`` for many-to-one models.
-    ``X_val`` may be a list of arrays (e.g. CNN-MLP dual input).
-
-    Factory function with lazy TF import for CI, same pattern as FocalLoss.
+    """
+    Keras callback that selects the best epoch by macro-F1
     """
     import tensorflow as tf
     from sklearn.metrics import f1_score

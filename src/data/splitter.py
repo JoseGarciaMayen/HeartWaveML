@@ -64,9 +64,9 @@ def split_data(path="data/interim/mitbih_combined_records.csv"):
     Splits the dataset into training, validation and testing sets.
     Then, applies filtering and scaling.
 
-    The split is patient-wise following the de Chazal DS1/DS2 partition (see
-    ``DS1_RECORDS``/``DS2_RECORDS``): training and validation come from DS1 and
-    the test set is DS2, so no patient appears in more than one set. This is the
+    The split is patient-wise following the de Chazal DS1/DS2 partition:
+    training and validation come from DS1 and the test set is DS2,
+    so no patient appears in more than one set. This is the
     standard inter-patient paradigm and avoids inter-patient data leakage.
     """
     df = pd.read_csv(path)
