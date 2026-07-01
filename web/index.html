@@ -280,10 +280,10 @@
         <form id="ecgForm">
           <div class="form-group">
             <label for="signalData">ECG signal data:</label>
-            <textarea id="signalData" rows="8" placeholder="Input exactly 45 consecutive heartbeats, comma-separated (187 samples each), e.g.:
-[1.2, 3.4, 2.1, 4.5, 3.2, 1.8, 2.7, ...], [2.1, 3.3, 2.2, 4.1, 3.5, 1.9, 2.8, ...], ... (45 beats total)
+            <textarea id="signalData" rows="8" placeholder="Input consecutive heartbeats in recording order, comma-separated (187 samples each), e.g.:
+[1.2, 3.4, 2.1, 4.5, 3.2, 1.8, 2.7, ...], [2.1, 3.3, 2.2, 4.1, 3.5, 1.9, 2.8, ...], ...
 
-The API classifies the center beat (23rd) of the window. Or paste data from a file."></textarea>
+Every beat pasted here gets classified using a sliding 45-beat window around it (edges are padded by repeating the first/last beat). Or paste data from a file."></textarea>
           </div>
 
           <button type="button" class="predict-btn" onclick="predictECG()">
@@ -521,6 +521,43 @@ The API classifies the center beat (23rd) of the window. Or paste data from a fi
       document.getElementById("chartSection").classList.add("show");
     }
 
+    const PREDICT_BATCH_SIZE = 200; // API caps at 200 windows per request
+
+    // Sliding 45-beat window centered on `centerIdx`, edges padded by
+    // repeating the first/last beat (mirrors src/data/generate_sequences.py's
+    // np.clip boundary handling, so beats near the start/end of a recording
+    // are classified the same way training built its windows).
+    function buildBeatWindow(signals, centerIdx, K) {
+      const n = signals.length;
+      const beats = [];
+      for (let j = centerIdx - K; j <= centerIdx + K; j++) {
+        const idx = Math.min(Math.max(j, 0), n - 1);
+        beats.push({ signal: signals[idx], r_peak_sample: idx * 300 });
+      }
+      return { beats };
+    }
+
+    async function classifyAllBeats(signals) {
+      const K = Math.floor(WINDOW / 2);
+      const windows = signals.map((_, i) => buildBeatWindow(signals, i, K));
+
+      const allResults = [];
+      for (let start = 0; start < windows.length; start += PREDICT_BATCH_SIZE) {
+        const chunk = windows.slice(start, start + PREDICT_BATCH_SIZE);
+        const response = await fetch(`${API_URL}/predict`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(chunk),
+        });
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.detail || "Error en la predicción");
+        }
+        allResults.push(...data.results);
+      }
+      return allResults;
+    }
+
     async function predictECG() {
       const signalText = document.getElementById("signalData").value.trim();
 
@@ -561,60 +598,44 @@ The API classifies the center beat (23rd) of the window. Or paste data from a fi
             }
           }
 
-          if (signals.length !== WINDOW) {
-            showError(
-              `Expected exactly ${WINDOW} consecutive beats, got ${signals.length}. ` +
-              `The API classifies the center beat of a ${WINDOW}-beat window.`
-            );
-            return;
-          }
-
           document.getElementById("loading").style.display = "block";
           document.getElementById("results").classList.remove("show");
           document.getElementById("error").style.display = "none";
 
-          let response, data;
+          const results = await classifyAllBeats(signals);
 
-          // r_peak_sample: synthetic evenly-spaced positions (real chronological
-          // order matters for the RR-interval features, actual timestamps unknown
-          // from pasted/manual signal data).
-          const beats = signals.map((signal, i) => ({
-            signal,
-            r_peak_sample: i * 300,
-          }));
+          const tally = {};
+          Object.keys(CLASSES).forEach((id) => (tally[id] = 0));
+          let successCount = 0;
+          let failedCount = 0;
+          let totalTime = 0;
 
-          response = await fetch(`${API_URL}/predict`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify([{ beats }]),
+          results.forEach((r) => {
+            if (r.success) {
+              const classId = r.result.prediction;
+              tally[classId] = (tally[classId] || 0) + 1;
+              totalTime += r.result.processing_time_ms;
+              successCount++;
+            } else {
+              failedCount++;
+            }
           });
 
-          data = await response.json();
+          const resultText = Object.entries(CLASSES)
+            .map(([id, name]) => `${name}: ${tally[id] || 0}`)
+            .join("\n");
 
-          if (response.ok) {
-            const result = data.results[0];
+          document.getElementById("resultValue").textContent = resultText;
+          document.getElementById("resultDescription").textContent =
+            `Beats classified: ${successCount} of ${signals.length}` +
+            (failedCount ? ` (${failedCount} failed)` : "");
+          document.getElementById("processingTime").textContent = successCount
+            ? (totalTime / successCount).toFixed(2)
+            : "N/A";
 
-            if (!result.success) {
-              throw new Error(result.error || "Error en la predicción");
-            }
+          document.getElementById("results").classList.add("show");
 
-            const classId = result.result.prediction;
-            const className = CLASSES[classId] || `Unknown class (${classId})`;
-
-            document.getElementById("resultValue").textContent = className;
-            document.getElementById("resultDescription").textContent =
-              `Center beat (23rd of ${WINDOW}) classification`;
-            document.getElementById("processingTime").textContent =
-              result.result.processing_time_ms.toFixed(2);
-
-            document.getElementById("results").classList.add("show");
-
-            visualizeSignal(signals);
-          } else {
-            throw new Error(data.detail || "Error en la predicción");
-          }
+          visualizeSignal(signals);
         } else {
           showError("Please input ECG signal data with the correct format.");
         }
@@ -645,9 +666,11 @@ The API classifies the center beat (23rd) of the window. Or paste data from a fi
       return beat;
     }
 
+    const EXAMPLE_BEAT_COUNT = 60; // > WINDOW, demos classifying a full recording
+
     function loadExample() {
       const exampleData = [];
-      for (let i = 0; i < WINDOW; i++) {
+      for (let i = 0; i < EXAMPLE_BEAT_COUNT; i++) {
         exampleData.push(generateSyntheticBeat(i * 0.3));
       }
       document.getElementById("signalData").value = exampleData
