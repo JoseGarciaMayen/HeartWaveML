@@ -30,10 +30,7 @@ MODELS = {
         "tune_kwargs": lambda: {
             "pruner": importlib.import_module("optuna").pruners.MedianPruner(
                 n_startup_trials=5, n_warmup_steps=10
-            ),
-            "enqueue_params": [
-                importlib.import_module("src.config").TUNING["transformer"]["known_good"]
-            ],
+            )
         },
     },
 }

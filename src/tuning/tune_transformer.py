@@ -132,5 +132,4 @@ class TunerTransformer(TunerBase):
 
 if __name__ == "__main__":
     pruner = optuna.pruners.MedianPruner(n_startup_trials=5, n_warmup_steps=10)
-    known_good = TUNING["transformer"].get("known_good")
-    TunerTransformer().run(pruner=pruner, enqueue_params=[known_good] if known_good else None)
+    TunerTransformer().run(pruner=pruner)

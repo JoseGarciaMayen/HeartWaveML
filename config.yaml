@@ -54,12 +54,3 @@ tuning:
       dropout:       [0.0, 0.3]
       learning_rate: [0.0001, 0.01]
       epochs:        [20, 30, 50]
-    known_good:
-      d_model:       64
-      num_heads:     4
-      key_dim:       16
-      ff_dim:        128
-      num_blocks:    2
-      dropout:       0.1
-      learning_rate: 0.001
-      epochs:        30
