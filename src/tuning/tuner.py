@@ -1,13 +1,10 @@
-import os
 import uuid
 from abc import ABC, abstractmethod
 
-import mlflow
 import optuna
 from dotenv import load_dotenv
 
 load_dotenv()
-IP = os.getenv("IP", "127.0.0.1")
 
 
 class TunerBase(ABC):
@@ -19,8 +16,6 @@ class TunerBase(ABC):
         self.n_trials = n_trials
         self.direction = direction
         self.run_id = uuid.uuid4().hex[:8]
-        mlflow.set_tracking_uri(f"http://{IP}:5000")
-        mlflow.set_experiment(experiment_name)
 
     def load_data(self, train_path: str, cv_path: str):
         """Load train/cv CSVs. Return X_train, y_train, X_cv, y_cv."""
@@ -29,7 +24,7 @@ class TunerBase(ABC):
         return load_splits(train_path, cv_path)
 
     def log_metrics(self, model, X_train, y_train, X_cv, y_cv) -> dict:
-        """Compute and log metrics to the active MLflow run. Return metrics dict."""
+        """Compute and log metrics to the active ClearML Task. Return metrics dict."""
         from src.utils import compute_and_log_metrics
 
         return compute_and_log_metrics(model, X_train, y_train, X_cv, y_cv)
@@ -40,7 +35,7 @@ class TunerBase(ABC):
         ...
 
     def _run_trial(self, trial):
-        """Wrap objective() with one ClearML Task per trial (mirrors MLflow's nested run)."""
+        """Wrap objective() with one ClearML Task per trial."""
         from src.tracking import init_clearml
 
         clearml_task = init_clearml(

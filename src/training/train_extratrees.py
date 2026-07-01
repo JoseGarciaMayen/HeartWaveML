@@ -1,4 +1,3 @@
-import mlflow
 from sklearn.ensemble import ExtraTreesClassifier
 from sklearn.utils.class_weight import compute_sample_weight
 
@@ -18,13 +17,8 @@ class TrainerExtraTrees(TrainerTreeBased):
     PARAM_TYPES = ET_PARAM_TYPES
     SUPPORTS_EVAL_SET = False
 
-    def __init__(self, model_name="modelExtraTrees", mlflow_experiment_name="ECG_ExtraTrees"):
-        super().__init__(model_name, mlflow_experiment_name)
-
-    def _log_mlflow_model(self, model, input_example, signature):
-        mlflow.sklearn.log_model(
-            model, self.model_name, registered_model_name=self.model_name, signature=signature
-        )
+    def __init__(self, model_name="modelExtraTrees", experiment_name="ECG_ExtraTrees"):
+        super().__init__(model_name, experiment_name)
 
     def create_model(self):
         params = self.get_typed_params(self.get_params())
@@ -34,7 +28,7 @@ class TrainerExtraTrees(TrainerTreeBased):
         X_train, y_train, X_cv, y_cv, _ = self.load_data(DATA["feat_train"], DATA["feat_cv"])
         sample_weights = compute_sample_weight("balanced", y_train)
         model, params = self.create_model()
-        self.mlflow_start(
+        self.run_training(
             model, X_train, y_train, X_cv, y_cv, params, sample_weights=sample_weights
         )
 

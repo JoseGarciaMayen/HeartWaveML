@@ -1,8 +1,8 @@
-import mlflow
 from lightgbm import LGBMClassifier
 from sklearn.utils.class_weight import compute_sample_weight
 
 from src.config import DATA, TUNING
+from src.tracking import clearml_log_params
 from src.tuning.tuner import TunerBase
 from src.utils import notify_telegram
 
@@ -35,15 +35,14 @@ class TunerLGBM(TunerBase):
             "verbosity": -1,
             "random_state": 42,
         }
-        with mlflow.start_run(nested=True):
-            mlflow.log_params(params)
-            model = LGBMClassifier(**params)
-            model.fit(self.X_train, self.y_train, sample_weight=self.sample_weights)
-            metrics = self.log_metrics(model, self.X_train, self.y_train, self.X_cv, self.y_cv)
-            notify_telegram(
-                f"LGBM trial - f1: {metrics['val_f1_macro']:.4f}, f1_w: {metrics['val_f1_weighted']:.4f}"
-            )
-            return metrics["val_f1_macro"]
+        clearml_log_params(params)
+        model = LGBMClassifier(**params)
+        model.fit(self.X_train, self.y_train, sample_weight=self.sample_weights)
+        metrics = self.log_metrics(model, self.X_train, self.y_train, self.X_cv, self.y_cv)
+        notify_telegram(
+            f"LGBM trial - f1: {metrics['val_f1_macro']:.4f}, f1_w: {metrics['val_f1_weighted']:.4f}"
+        )
+        return metrics["val_f1_macro"]
 
 
 if __name__ == "__main__":

@@ -159,8 +159,8 @@ def make_best_f1_restorer(X_val, y_val, center_idx=None, batch_size=512):
     """Keras callback that selects the best epoch by macro-F1, not val_loss.
 
     Each epoch it predicts on the validation set, computes macro-F1, injects it
-    into ``logs`` as ``val_f1_macro`` (so EarlyStopping can monitor it and MLflow
-    autolog records it), tracks the best weights, and restores them on train end.
+    into ``logs`` as ``val_f1_macro`` (so EarlyStopping and other callbacks can monitor
+    it), tracks the best weights, and restores them on train end.
 
     ``center_idx``: for many-to-many models, the timestep to score
     (``logits[:, center_idx, :]``); ``None`` for many-to-one models.
@@ -202,10 +202,30 @@ def make_best_f1_restorer(X_val, y_val, center_idx=None, batch_size=512):
     return _BestF1Restorer()
 
 
+def make_clearml_epoch_logger():
+    """Keras callback that reports per-epoch train/val metrics to the active ClearML Task."""
+    import tensorflow as tf
+
+    class _ClearMLEpochLogger(tf.keras.callbacks.Callback):
+        def on_epoch_end(self, epoch, logs=None):
+            from clearml import Task
+
+            task = Task.current_task()
+            if task is None or not logs:
+                return
+            logger = task.get_logger()
+            for k, v in logs.items():
+                series, title = ("val", k[4:]) if k.startswith("val_") else ("train", k)
+                logger.report_scalar(title=title, series=series, value=float(v), iteration=epoch)
+
+    return _ClearMLEpochLogger()
+
+
 def compute_and_log_metrics(model, X_train, y_train, X_cv, y_cv) -> dict:
-    """Compute accuracy, log_loss, and F1 on train/val sets and log to the active MLflow run."""
-    import mlflow
+    """Compute accuracy, log_loss, and F1 on train/val sets and log them to the active ClearML Task."""
     from sklearn.metrics import f1_score, log_loss
+
+    from src.tracking import clearml_log_metrics
 
     metrics = {
         "accuracy": model.score(X_train, y_train),
@@ -219,7 +239,6 @@ def compute_and_log_metrics(model, X_train, y_train, X_cv, y_cv) -> dict:
     metrics["val_f1_macro"] = f1_score(y_cv, y_cv_pred, average="macro")
     metrics["val_f1_weighted"] = f1_score(y_cv, y_cv_pred, average="weighted")
 
-    for k, v in metrics.items():
-        mlflow.log_metric(k, v)
+    clearml_log_metrics(metrics)
 
     return metrics

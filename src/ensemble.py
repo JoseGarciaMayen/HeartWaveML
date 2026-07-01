@@ -5,7 +5,7 @@ class EnsembleModel:
     """Soft-voting wrapper. Compatible with compute_and_log_metrics (predict_proba/predict/score).
 
     Kept in this lightweight module (numpy only) so a persisted ensemble can be reloaded for
-    evaluation or serving without importing mlflow or the training stack.
+    evaluation or serving without importing the training stack.
     """
 
     def __init__(self, models: list, weights: list):

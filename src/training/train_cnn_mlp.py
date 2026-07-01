@@ -1,7 +1,6 @@
 import gc
 import os
 
-import mlflow
 import numpy as np
 import tensorflow as tf
 from sklearn.metrics import f1_score
@@ -19,13 +18,14 @@ from tensorflow.keras.layers import (  # type: ignore
 from tensorflow.keras.models import Model  # type: ignore
 
 from src.config import DATA
+from src.tracking import clearml_log_metrics, clearml_log_params
 from src.training.trainer import TrainerBase
-from src.utils import FocalLoss, make_best_f1_restorer, notify_telegram
+from src.utils import FocalLoss, make_best_f1_restorer, make_clearml_epoch_logger, notify_telegram
 
 
 class TrainerCNNMLP(TrainerBase):
-    def __init__(self, model_name="modelCNNMLP", mlflow_experiment_name="ECG_CNNMLP"):
-        super().__init__(model_name, mlflow_experiment_name)
+    def __init__(self, model_name="modelCNNMLP", experiment_name="ECG_CNNMLP"):
+        super().__init__(model_name, experiment_name)
 
     def get_typed_params(self, best_params):
         param_types = {
@@ -47,7 +47,7 @@ class TrainerCNNMLP(TrainerBase):
     def create_model(self, input_shape_cnn=(187, 1), input_shape_mlp=(36,), num_classes=3):
         p = self.get_typed_params(self.get_params())
 
-        mlflow.log_params(
+        clearml_log_params(
             {
                 "input_shape_cnn": input_shape_cnn,
                 "input_shape_mlp": input_shape_mlp,
@@ -98,46 +98,42 @@ class TrainerCNNMLP(TrainerBase):
         os.makedirs("src/saved_models/candidates", exist_ok=True)
         model.save(f"src/saved_models/candidates/{model_name}.keras")
 
-    def mlflow_start(self, model, X_train, y_train, X_cv, y_cv, class_weights):
-        mlflow.tensorflow.autolog(log_models=False, log_datasets=False, silent=True)
+    def run_training(self, model, X_train, y_train, X_cv, y_cv, class_weights):
+        best_f1 = make_best_f1_restorer(self._split_inputs(X_cv), y_cv, center_idx=None)
+        early_stop = tf.keras.callbacks.EarlyStopping(
+            monitor="val_f1_macro", mode="max", patience=10, restore_best_weights=False
+        )
+        model.fit(
+            self._split_inputs(X_train),
+            y_train,
+            class_weight=class_weights,
+            validation_data=(self._split_inputs(X_cv), y_cv),
+            epochs=50,
+            callbacks=[best_f1, early_stop, make_clearml_epoch_logger()],
+        )
 
-        with mlflow.start_run(nested=True):
-            best_f1 = make_best_f1_restorer(self._split_inputs(X_cv), y_cv, center_idx=None)
-            early_stop = tf.keras.callbacks.EarlyStopping(
-                monitor="val_f1_macro", mode="max", patience=10, restore_best_weights=False
-            )
-            model.fit(
-                self._split_inputs(X_train),
-                y_train,
-                class_weight=class_weights,
-                validation_data=(self._split_inputs(X_cv), y_cv),
-                epochs=50,
-                callbacks=[best_f1, early_stop],
-            )
+        loss, acc = model.evaluate(self._split_inputs(X_train), y_train, verbose=0)
+        val_loss, val_acc = model.evaluate(self._split_inputs(X_cv), y_cv, verbose=0)
+        y_cv_pred = np.argmax(model.predict(self._split_inputs(X_cv)), axis=1)
+        val_f1 = f1_score(y_cv, y_cv_pred, average="macro")
+        val_f1_weighted = f1_score(y_cv, y_cv_pred, average="weighted")
 
-            loss, acc = model.evaluate(self._split_inputs(X_train), y_train, verbose=0)
-            val_loss, val_acc = model.evaluate(self._split_inputs(X_cv), y_cv, verbose=0)
-            y_cv_pred = np.argmax(model.predict(self._split_inputs(X_cv)), axis=1)
-            val_f1 = f1_score(y_cv, y_cv_pred, average="macro")
-            val_f1_weighted = f1_score(y_cv, y_cv_pred, average="weighted")
+        clearml_log_metrics(
+            {
+                "accuracy": acc,
+                "loss": loss,
+                "val_accuracy": val_acc,
+                "val_loss": val_loss,
+                "val_f1_macro": val_f1,
+                "val_f1_weighted": val_f1_weighted,
+            }
+        )
 
-            mlflow.log_metrics(
-                {
-                    "accuracy": acc,
-                    "loss": loss,
-                    "val_accuracy": val_acc,
-                    "val_loss": val_loss,
-                    "val_f1_macro": val_f1,
-                    "val_f1_weighted": val_f1_weighted,
-                }
-            )
+        self.save_model(model, self.model_name)
 
-            mlflow.keras.log_model(model, self.model_name, registered_model_name=self.model_name)
-            self.save_model(model, self.model_name)
-
-            del model
-            gc.collect()
-            return val_f1
+        del model
+        gc.collect()
+        return val_f1
 
     def train(self):
         X_train, y_train, X_cv, y_cv, class_weights = self.load_data(
@@ -146,7 +142,7 @@ class TrainerCNNMLP(TrainerBase):
         n_mlp_features = X_train.shape[1] - 187
         num_classes = y_train.nunique()
         model = self.create_model(input_shape_mlp=(n_mlp_features,), num_classes=num_classes)
-        val_f1 = self.mlflow_start(model, X_train, y_train, X_cv, y_cv, class_weights)
+        val_f1 = self.run_training(model, X_train, y_train, X_cv, y_cv, class_weights)
         return val_f1
 
 

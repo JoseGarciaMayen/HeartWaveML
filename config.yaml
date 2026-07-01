@@ -111,7 +111,7 @@ tuning:
       epochs:        [20, 30, 50]
 
   cnn_mlp:
-    n_trials: 1 # 50
+    n_trials: 30 # 50
     epochs:   [5, 10] # [25, 50, 75]    # Optuna picks among these options
     patience: 10              # EarlyStopping patience
     search_space:

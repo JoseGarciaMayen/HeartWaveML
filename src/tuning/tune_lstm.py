@@ -1,4 +1,3 @@
-import mlflow
 import numpy as np
 import tensorflow as tf
 from sklearn.metrics import f1_score
@@ -12,8 +11,15 @@ from tensorflow.keras.layers import (  # type: ignore
 from tensorflow.keras.models import Model  # type: ignore
 
 from src.config import TUNING
+from src.tracking import clearml_log_metrics, clearml_log_params
 from src.tuning.tuner import TunerBase
-from src.utils import FocalLoss, get_class_weights, make_best_f1_restorer, notify_telegram
+from src.utils import (
+    FocalLoss,
+    get_class_weights,
+    make_best_f1_restorer,
+    make_clearml_epoch_logger,
+    notify_telegram,
+)
 
 # LSTM many-to-one uses its own W=5 window, matching train_lstm.py.
 SEQ_DIR = "data/processed/seq_lstm"
@@ -65,35 +71,34 @@ class TunerLSTM(TunerBase):
             "epochs": trial.suggest_categorical("epochs", ss["epochs"]),
         }
 
-        with mlflow.start_run(nested=True):
-            mlflow.log_params(params)
-            model = _build_model(self.window, self.n_features, params)
-            best_f1 = make_best_f1_restorer(self.X_cv, self.y_cv, center_idx=None)
-            early_stop = tf.keras.callbacks.EarlyStopping(
-                monitor="val_f1_macro",
-                mode="max",
-                patience=self._patience,
-                restore_best_weights=False,
-            )
-            model.fit(
-                self.X_train,
-                self.y_train,
-                class_weight=self.class_weights,
-                validation_data=(self.X_cv, self.y_cv),
-                epochs=params["epochs"],
-                batch_size=256,
-                callbacks=[best_f1, early_stop],
-                verbose=2,
-            )
-            y_pred = np.argmax(model.predict(self.X_cv, batch_size=512, verbose=0), axis=1)
-            val_f1 = f1_score(self.y_cv, y_pred, average="macro", zero_division=0)
-            mlflow.log_metric("val_f1_macro", val_f1)
+        clearml_log_params(params)
+        model = _build_model(self.window, self.n_features, params)
+        best_f1 = make_best_f1_restorer(self.X_cv, self.y_cv, center_idx=None)
+        early_stop = tf.keras.callbacks.EarlyStopping(
+            monitor="val_f1_macro",
+            mode="max",
+            patience=self._patience,
+            restore_best_weights=False,
+        )
+        model.fit(
+            self.X_train,
+            self.y_train,
+            class_weight=self.class_weights,
+            validation_data=(self.X_cv, self.y_cv),
+            epochs=params["epochs"],
+            batch_size=256,
+            callbacks=[best_f1, early_stop, make_clearml_epoch_logger()],
+            verbose=2,
+        )
+        y_pred = np.argmax(model.predict(self.X_cv, batch_size=512, verbose=0), axis=1)
+        val_f1 = f1_score(self.y_cv, y_pred, average="macro", zero_division=0)
+        clearml_log_metrics({"val_f1_macro": val_f1})
 
-            notify_telegram(f"LSTM trial - f1_macro: {val_f1:.4f}")
+        notify_telegram(f"LSTM trial - f1_macro: {val_f1:.4f}")
 
-            del model
-            gc.collect()
-            tf.keras.backend.clear_session()
+        del model
+        gc.collect()
+        tf.keras.backend.clear_session()
 
         return val_f1
 

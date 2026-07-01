@@ -1,6 +1,5 @@
 import gc
 
-import mlflow
 import numpy as np
 import optuna
 import tensorflow as tf
@@ -19,8 +18,15 @@ from tensorflow.keras.layers import (  # type: ignore
 from tensorflow.keras.models import Model  # type: ignore
 
 from src.config import DATA, TUNING
+from src.tracking import clearml_log_metrics, clearml_log_params
 from src.tuning.tuner import TunerBase
-from src.utils import FocalLoss, get_class_weights, make_best_f1_restorer, notify_telegram
+from src.utils import (
+    FocalLoss,
+    get_class_weights,
+    make_best_f1_restorer,
+    make_clearml_epoch_logger,
+    notify_telegram,
+)
 
 
 class TunerCNNMLP(TunerBase):
@@ -55,7 +61,7 @@ class TunerCNNMLP(TunerBase):
         units_mlp2 = trial.suggest_categorical("units_mlp2", [256])
         units_mlp3 = trial.suggest_categorical("units_mlp3", [128])
 
-        mlflow.log_params(
+        clearml_log_params(
             {
                 "input_shape_cnn": input_shape_cnn,
                 "input_shape_mlp": input_shape_mlp,
@@ -113,57 +119,51 @@ class TunerCNNMLP(TunerBase):
         return model
 
     def objective(self, trial) -> float:
-        mlflow.tensorflow.autolog(log_models=False, log_datasets=False, silent=True)
-        with mlflow.start_run(nested=True):
-            epochs = trial.suggest_categorical("epochs", self._epochs_choices)
-            mlflow.log_param("epochs", epochs)
+        epochs = trial.suggest_categorical("epochs", self._epochs_choices)
+        clearml_log_params({"epochs": epochs})
 
-            model = self._build_model(
-                trial, input_shape_mlp=(self.n_mlp_features,), num_classes=self.num_classes
-            )
-            best_f1 = make_best_f1_restorer(
-                [self.X_cv_cnn, self.X_cv_mlp], self.y_cv, center_idx=None
-            )
-            early_stopping = tf.keras.callbacks.EarlyStopping(
-                monitor="val_f1_macro",
-                mode="max",
-                patience=self._patience,
-                restore_best_weights=False,
-            )
-            model.fit(
-                [self.X_train_cnn, self.X_train_mlp],
-                self.y_train,
-                class_weight=self.class_weights,
-                validation_data=([self.X_cv_cnn, self.X_cv_mlp], self.y_cv),
-                epochs=epochs,
-                callbacks=[best_f1, early_stopping],
-                verbose=2,
-            )
+        model = self._build_model(
+            trial, input_shape_mlp=(self.n_mlp_features,), num_classes=self.num_classes
+        )
+        best_f1 = make_best_f1_restorer([self.X_cv_cnn, self.X_cv_mlp], self.y_cv, center_idx=None)
+        early_stopping = tf.keras.callbacks.EarlyStopping(
+            monitor="val_f1_macro",
+            mode="max",
+            patience=self._patience,
+            restore_best_weights=False,
+        )
+        model.fit(
+            [self.X_train_cnn, self.X_train_mlp],
+            self.y_train,
+            class_weight=self.class_weights,
+            validation_data=([self.X_cv_cnn, self.X_cv_mlp], self.y_cv),
+            epochs=epochs,
+            callbacks=[best_f1, early_stopping, make_clearml_epoch_logger()],
+            verbose=2,
+        )
 
-            loss, acc = model.evaluate(
-                [self.X_train_cnn, self.X_train_mlp], self.y_train, verbose=0
-            )
-            val_loss, val_acc = model.evaluate([self.X_cv_cnn, self.X_cv_mlp], self.y_cv, verbose=0)
-            y_cv_pred = np.argmax(model.predict([self.X_cv_cnn, self.X_cv_mlp]), axis=1)
-            val_f1 = f1_score(self.y_cv, y_cv_pred, average="macro")
-            val_f1_weighted = f1_score(self.y_cv, y_cv_pred, average="weighted")
+        loss, acc = model.evaluate([self.X_train_cnn, self.X_train_mlp], self.y_train, verbose=0)
+        val_loss, val_acc = model.evaluate([self.X_cv_cnn, self.X_cv_mlp], self.y_cv, verbose=0)
+        y_cv_pred = np.argmax(model.predict([self.X_cv_cnn, self.X_cv_mlp]), axis=1)
+        val_f1 = f1_score(self.y_cv, y_cv_pred, average="macro")
+        val_f1_weighted = f1_score(self.y_cv, y_cv_pred, average="weighted")
 
-            mlflow.log_metrics(
-                {
-                    "accuracy": acc,
-                    "loss": loss,
-                    "val_accuracy": val_acc,
-                    "val_loss": val_loss,
-                    "val_f1_macro": val_f1,
-                    "val_f1_weighted": val_f1_weighted,
-                }
-            )
-            notify_telegram(f"CNNMLP trial - f1: {val_f1:.4f}, f1_w: {val_f1_weighted:.4f}")
+        clearml_log_metrics(
+            {
+                "accuracy": acc,
+                "loss": loss,
+                "val_accuracy": val_acc,
+                "val_loss": val_loss,
+                "val_f1_macro": val_f1,
+                "val_f1_weighted": val_f1_weighted,
+            }
+        )
+        notify_telegram(f"CNNMLP trial - f1: {val_f1:.4f}, f1_w: {val_f1_weighted:.4f}")
 
-            del model
-            gc.collect()
-            tf.keras.backend.clear_session()
-            return val_f1
+        del model
+        gc.collect()
+        tf.keras.backend.clear_session()
+        return val_f1
 
 
 if __name__ == "__main__":
