@@ -1,0 +1,5 @@
+outs:
+- md5: 4d8c62167e720e1b9ffafe11b01bf405
+  size: 8908184
+  hash: md5
+  path: modelSeq2Seq.keras

@@ -1,5 +1,5 @@
 outs:
-- md5: 7f414da1f4defaa42da2aba258bfd57f
-  size: 11143048
+- md5: 1c90c6e15ed3069c3c9fc8cb9d644c37
+  size: 11186056
   hash: md5
   path: modelCNNMLP.keras

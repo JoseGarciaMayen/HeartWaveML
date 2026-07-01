@@ -23,20 +23,20 @@ stages:
       nfiles: 705
     - path: src/data/features.py
       hash: md5
-      md5: 3c5f6a7561d4927607872eac35544cc6
-      size: 4861
+      md5: 00a8771b0f1795e297227e8fafa81fca
+      size: 5720
     - path: src/data/generate_data.py
       hash: md5
-      md5: dd55a18a0bc1a17d64cd6b4ac140b4c5
-      size: 3934
+      md5: dabace4c78988c55043789ae2161d2cb
+      size: 3075
     - path: src/data/splitter.py
       hash: md5
-      md5: 1df9e1b51c3b4206069c6fd33aa8019b
-      size: 7113
+      md5: 97072980d42019a7f4d3b03388ad369f
+      size: 3981
     - path: src/utils.py
       hash: md5
-      md5: ae0d5ed8f7d672474f77a00b487caeac
-      size: 3949
+      md5: ffe1ac56b3acc2ea98806210587f2f80
+      size: 6371
     outs:
     - path: data/interim/mitbih_combined_records.csv
       hash: md5
@@ -44,12 +44,12 @@ stages:
       size: 131501971
     - path: data/interim/mitbih_features.csv
       hash: md5
-      md5: 2869bc74487009ad510c2ae6281da2b0
-      size: 194697718
+      md5: 06346ea0786f377ac405a92068390cfb
+      size: 209448434
     - path: data/interim/mitbih_features_only.csv
       hash: md5
-      md5: 7904dc0ec265c4b11d61f1005067822e
-      size: 64612240
+      md5: 195862e97a44f0304924bed1bd1e274e
+      size: 79362956
     - path: data/processed/base
       hash: md5
       md5: b8b79fd92b836fae39f464e6d680dccf.dir
@@ -57,89 +57,33 @@ stages:
       nfiles: 3
     - path: data/processed/feat
       hash: md5
-      md5: db3ccee27e457b25e42266cc4bb9cf5e.dir
-      size: 444263107
+      md5: 333e4cb43c509f8bd36d1c743601c438.dir
+      size: 458190805
       nfiles: 3
-    - path: data/processed/feat_only
-      hash: md5
-      md5: c1fe230a8f9f7ff028409630ab54f861.dir
-      size: 77726163
-      nfiles: 3
-    - path: src/saved_models/scaler.joblib
-      hash: md5
-      md5: 48888f68bd6b65b21c58c6b56617184b
-      size: 6039
-    - path: src/saved_models/scaler_convxgb.joblib
-      hash: md5
-      md5: 8e519818237e18bb3737a2ff3d8408bb
-      size: 5087
   evaluate:
     cmd: python -m src.evaluate
     deps:
-    - path: data/processed/cnn/mitbih_test_cnn.csv
-      hash: md5
-      md5: 7757414d812e7f54efc4d5da26d746b7
-      size: 37318681
     - path: data/processed/feat/mitbih_test_features.csv
       hash: md5
-      md5: 28b8e0c980701b55c8e12276ba0fb7a3
-      size: 218400136
+      md5: 8a02126fbc3d91a57166992467b08f98
+      size: 225261499
     - path: src/evaluate.py
       hash: md5
-      md5: af0eb82359c33421507400096e871934
-      size: 4556
+      md5: 4533ad0264c8fe852c619d4588b7556d
+      size: 6547
     - path: src/saved_models/modelCNNMLP.keras
       hash: md5
-      md5: 7f414da1f4defaa42da2aba258bfd57f
-      size: 11143048
-    - path: src/saved_models/modelCONVXGB.joblib
+      md5: 1c90c6e15ed3069c3c9fc8cb9d644c37
+      size: 11186056
+    - path: src/saved_models/modelLSTM.keras
       hash: md5
-      md5: 09ed8d2f4a8a3ee05cac3dff4950461e
-      size: 897412
-    - path: src/saved_models/modelXGB.joblib
+      md5: f92735dacea17989a9e4cbbcc134581c
+      size: 7238080
+    - path: src/saved_models/modelSeq2Seq.keras
       hash: md5
-      md5: 097ce5cd996cad3c9d7fef0c2c361519
-      size: 3504622
-  feature_extractor:
-    cmd: python -m src.training.feature_extractor
-    deps:
-    - path: data/processed/base
+      md5: 4d8c62167e720e1b9ffafe11b01bf405
+      size: 8908184
+    - path: src/saved_models/modelTransformer.keras
       hash: md5
-      md5: b8b79fd92b836fae39f464e6d680dccf.dir
-      size: 366589780
-      nfiles: 3
-    - path: src/training/feature_extractor.py
-      hash: md5
-      md5: 5f45e6597b9f8e76062d924e54bcedef
-      size: 2993
-    outs:
-    - path: src/saved_models/feature_extractor.keras
-      hash: md5
-      md5: c4ae4337036d5f3a77f5a5cad0f6e7d6
-      size: 90040
-    - path: src/saved_models/feature_extractor.onnx
-      hash: md5
-      md5: 1fa25d4d0e40134c2455230854e5453d
-      size: 59241
-  cnn:
-    cmd: python -m src.data.generate_data --mode cnn
-    deps:
-    - path: data/processed/base
-      hash: md5
-      md5: b8b79fd92b836fae39f464e6d680dccf.dir
-      size: 366589780
-      nfiles: 3
-    - path: src/data/splitter.py
-      hash: md5
-      md5: 1df9e1b51c3b4206069c6fd33aa8019b
-      size: 7113
-    - path: src/saved_models/feature_extractor.keras
-      hash: md5
-      md5: c4ae4337036d5f3a77f5a5cad0f6e7d6
-      size: 90040
-    outs:
-    - path: data/processed/cnn
-      hash: md5
-      md5: 3f8667cf869957a0baa0fe1e62ed9989.dir
-      size: 75585387
-      nfiles: 3
+      md5: 307e2340920fb6781081c50121a6c5eb
+      size: 284424
