@@ -31,7 +31,6 @@ def build_pipeline(model_name: str) -> PipelineController:
         function=run_tune,
         function_kwargs={"model_name": "${pipeline.model_name}"},
         function_return=["model_name"],
-        execution_queue="default",
     )
     pipe.add_function_step(
         name="train",
@@ -39,14 +38,12 @@ def build_pipeline(model_name: str) -> PipelineController:
         function_kwargs={"model_name": "${tune.model_name}"},
         function_return=["model_name"],
         parents=["tune"],
-        execution_queue="default",
     )
     pipe.add_function_step(
         name="evaluate",
         function=run_evaluate,
         function_kwargs={"model_name": "${train.model_name}"},
         parents=["train"],
-        execution_queue="default",
     )
     return pipe
 
