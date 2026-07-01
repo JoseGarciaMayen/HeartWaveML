@@ -219,26 +219,3 @@ def make_clearml_epoch_logger():
                 logger.report_scalar(title=title, series=series, value=float(v), iteration=epoch)
 
     return _ClearMLEpochLogger()
-
-
-def compute_and_log_metrics(model, X_train, y_train, X_cv, y_cv) -> dict:
-    """Compute accuracy, log_loss, and F1 on train/val sets and log them to the active ClearML Task."""
-    from sklearn.metrics import f1_score, log_loss
-
-    from src.tracking import clearml_log_metrics
-
-    metrics = {
-        "accuracy": model.score(X_train, y_train),
-        "loss": log_loss(y_train, model.predict_proba(X_train)),
-        "val_accuracy": model.score(X_cv, y_cv),
-        "val_loss": log_loss(y_cv, model.predict_proba(X_cv)),
-    }
-    # ravel() because some classifiers (e.g. CatBoost) return predictions with
-    # shape (n, 1) in multiclass, which would break f1_score against a 1D y.
-    y_cv_pred = np.asarray(model.predict(X_cv)).ravel()
-    metrics["val_f1_macro"] = f1_score(y_cv, y_cv_pred, average="macro")
-    metrics["val_f1_weighted"] = f1_score(y_cv, y_cv_pred, average="weighted")
-
-    clearml_log_metrics(metrics)
-
-    return metrics

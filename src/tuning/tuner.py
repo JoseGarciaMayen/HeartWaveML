@@ -23,12 +23,6 @@ class TunerBase(ABC):
 
         return load_splits(train_path, cv_path)
 
-    def log_metrics(self, model, X_train, y_train, X_cv, y_cv) -> dict:
-        """Compute and log metrics to the active ClearML Task. Return metrics dict."""
-        from src.utils import compute_and_log_metrics
-
-        return compute_and_log_metrics(model, X_train, y_train, X_cv, y_cv)
-
     @abstractmethod
     def objective(self, trial) -> float:
         """Define the Optuna search space. Must return the metric to optimize."""
