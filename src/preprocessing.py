@@ -31,17 +31,7 @@ WINDOW = SEQUENCES.get("window", 45)
 
 
 def preprocess_sequence(beats: list[dict]) -> np.ndarray:
-    """Builds a (1, WINDOW, 46) scaled sequence for Seq2Seq/Transformer inference.
-
-    Args:
-        beats: ordered list of exactly WINDOW consecutive, already-segmented beats,
-            each ``{"signal": [...187 floats...], "r_peak_sample": int}``.
-
-    Returns:
-        numpy.ndarray of shape (1, WINDOW, 46), scaled with the training-time
-        `scaler_seq.joblib` (46 morphological + RR features, same column order
-        as `data/interim/mitbih_features_only.csv`).
-    """
+    """Builds a (1, WINDOW, 46) scaled sequence from WINDOW ordered {signal, r_peak_sample} beats."""
     if len(beats) != WINDOW:
         raise ValueError(f"Expected exactly {WINDOW} beats, got {len(beats)}")
 
