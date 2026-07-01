@@ -14,6 +14,7 @@ from tensorflow.keras.layers import (  # type: ignore
 )
 from tensorflow.keras.models import Model  # type: ignore
 
+from src.config import TUNING
 from src.tracking import clearml_log_metrics, clearml_log_params
 from src.tuning.tuner import TunerBase
 from src.utils import (
@@ -24,12 +25,13 @@ from src.utils import (
 )
 
 SEQ_DIR = "data/processed/seq"
-N_TRIALS = 100
 
 
 class TunerSeq2Seq(TunerBase):
     def __init__(self):
-        super().__init__("ECG_Seq2Seq_tuning", n_trials=N_TRIALS)
+        cfg = TUNING["seq2seq"]
+        super().__init__("ECG_Seq2Seq_tuning", n_trials=cfg["n_trials"])
+        self.search_space = cfg["search_space"]
 
         self.X_train = np.load(f"{SEQ_DIR}/train_X.npy")  # (N, W, 46)
         self.X_cv = np.load(f"{SEQ_DIR}/cv_X.npy")
@@ -69,12 +71,13 @@ class TunerSeq2Seq(TunerBase):
         return model
 
     def objective(self, trial) -> float:
-        units1 = trial.suggest_int("units1", 32, 256)
-        units2 = trial.suggest_int("units2", 16, 128)
-        dense_units = trial.suggest_int("dense_units", 16, 128)
-        dropout = trial.suggest_float("dropout", 0.0, 0.5)
-        lr = trial.suggest_float("learning_rate", 1e-4, 1e-2, log=True)
-        epochs = trial.suggest_categorical("epochs", [20, 30, 50])
+        ss = self.search_space
+        units1 = trial.suggest_int("units1", *ss["units1"])
+        units2 = trial.suggest_int("units2", *ss["units2"])
+        dense_units = trial.suggest_int("dense_units", *ss["dense_units"])
+        dropout = trial.suggest_float("dropout", *ss["dropout"])
+        lr = trial.suggest_float("learning_rate", *ss["learning_rate"], log=True)
+        epochs = trial.suggest_categorical("epochs", ss["epochs"])
 
         params = {
             "units1": units1,

@@ -12,6 +12,7 @@ from tensorflow.keras.layers import (  # type: ignore
 )
 from tensorflow.keras.models import Model  # type: ignore
 
+from src.config import TUNING
 from src.tracking import clearml_log_metrics, clearml_log_params
 from src.training.train_transformer import _transformer_block
 from src.tuning.tuner import TunerBase
@@ -23,12 +24,13 @@ from src.utils import (
 )
 
 SEQ_DIR = "data/processed/seq"
-N_TRIALS = 50
 
 
 class TunerTransformer(TunerBase):
     def __init__(self):
-        super().__init__("ECG_Transformer_tuning", n_trials=N_TRIALS)
+        cfg = TUNING["transformer"]
+        super().__init__("ECG_Transformer_tuning", n_trials=cfg["n_trials"])
+        self.search_space = cfg["search_space"]
 
         self.X_train = np.load(f"{SEQ_DIR}/train_X.npy")
         self.X_cv = np.load(f"{SEQ_DIR}/cv_X.npy")
@@ -62,14 +64,15 @@ class TunerTransformer(TunerBase):
         return model
 
     def objective(self, trial) -> float:
-        d_model = trial.suggest_categorical("d_model", [32, 64, 128])
-        num_heads = trial.suggest_categorical("num_heads", [2, 4])
+        ss = self.search_space
+        d_model = trial.suggest_categorical("d_model", ss["d_model"])
+        num_heads = trial.suggest_categorical("num_heads", ss["num_heads"])
         key_dim = d_model // num_heads
-        ff_dim = trial.suggest_categorical("ff_dim", [64, 128, 256])
-        num_blocks = trial.suggest_int("num_blocks", 1, 3)
-        dropout = trial.suggest_float("dropout", 0.0, 0.3)
-        lr = trial.suggest_float("learning_rate", 1e-4, 1e-2, log=True)
-        epochs = trial.suggest_categorical("epochs", [20, 30, 50])
+        ff_dim = trial.suggest_categorical("ff_dim", ss["ff_dim"])
+        num_blocks = trial.suggest_int("num_blocks", *ss["num_blocks"])
+        dropout = trial.suggest_float("dropout", *ss["dropout"])
+        lr = trial.suggest_float("learning_rate", *ss["learning_rate"], log=True)
+        epochs = trial.suggest_categorical("epochs", ss["epochs"])
 
         params = {
             "d_model": d_model,
@@ -129,14 +132,5 @@ class TunerTransformer(TunerBase):
 
 if __name__ == "__main__":
     pruner = optuna.pruners.MedianPruner(n_startup_trials=5, n_warmup_steps=10)
-    known_good = {
-        "d_model": 64,
-        "num_heads": 4,
-        "key_dim": 16,
-        "ff_dim": 128,
-        "num_blocks": 2,
-        "dropout": 0.1,
-        "learning_rate": 0.001,
-        "epochs": 30,
-    }
-    TunerTransformer().run(pruner=pruner, enqueue_params=[known_good])
+    known_good = TUNING["transformer"].get("known_good")
+    TunerTransformer().run(pruner=pruner, enqueue_params=[known_good] if known_good else None)

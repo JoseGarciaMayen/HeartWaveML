@@ -32,16 +32,7 @@ MODELS = {
                 n_startup_trials=5, n_warmup_steps=10
             ),
             "enqueue_params": [
-                {
-                    "d_model": 64,
-                    "num_heads": 4,
-                    "key_dim": 16,
-                    "ff_dim": 128,
-                    "num_blocks": 2,
-                    "dropout": 0.1,
-                    "learning_rate": 0.001,
-                    "epochs": 30,
-                }
+                importlib.import_module("src.config").TUNING["transformer"]["known_good"]
             ],
         },
     },

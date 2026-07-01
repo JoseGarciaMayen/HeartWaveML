@@ -33,3 +33,33 @@ tuning:
       dropout:       [0.0, 0.4]
       learning_rate: [0.0001, 0.001]
       gamma:         [0.5, 5.0]
+
+  seq2seq:
+    n_trials: 100
+    search_space:
+      units1:        [32, 256]
+      units2:        [16, 128]
+      dense_units:   [16, 128]
+      dropout:       [0.0, 0.5]
+      learning_rate: [0.0001, 0.01]
+      epochs:        [20, 30, 50]
+
+  transformer:
+    n_trials: 50
+    search_space:
+      d_model:       [32, 64, 128]
+      num_heads:     [2, 4]
+      ff_dim:        [64, 128, 256]
+      num_blocks:    [1, 3]
+      dropout:       [0.0, 0.3]
+      learning_rate: [0.0001, 0.01]
+      epochs:        [20, 30, 50]
+    known_good:
+      d_model:       64
+      num_heads:     4
+      key_dim:       16
+      ff_dim:        128
+      num_blocks:    2
+      dropout:       0.1
+      learning_rate: 0.001
+      epochs:        30
