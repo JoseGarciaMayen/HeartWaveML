@@ -1,14 +1,4 @@
-"""Generate beat-sequence datasets for BiLSTM/Seq2Seq/Transformer.
-
-Reads data/interim/mitbih_features_only.csv (46 features + class + record),
-applies the same class filtering as splitter.py, scales features (fit on train),
-builds windows of W consecutive beats per patient with replication padding at
-boundaries, and saves numpy arrays to --out-dir (default: data/processed/seq/).
-
-Run after the 'preprocess' DVC stage (which generates the interim CSV):
-    python -m src.data.generate_sequences
-    python -m src.data.generate_sequences --window 9 --out-dir data/processed/seq_lstm
-"""
+"""Builds W-beat sequence windows for BiLSTM/Seq2Seq/Transformer from mitbih_features_only.csv."""
 
 import os
 
