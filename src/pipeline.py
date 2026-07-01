@@ -38,6 +38,36 @@ MODELS = {
         "tuner": ("src.tuning.tune_lstm", "TunerLSTM"),
         "trainer": ("src.training.train_lstm", "TrainerLSTM"),
     },
+    "seq2seq": {
+        "tuner": ("src.tuning.tune_seq2seq", "TunerSeq2Seq"),
+        "trainer": ("src.training.train_seq2seq", "TrainerSeq2Seq"),
+        "tune_kwargs": lambda: {
+            "pruner": importlib.import_module("optuna").pruners.MedianPruner(
+                n_startup_trials=5, n_warmup_steps=10
+            )
+        },
+    },
+    "transformer": {
+        "tuner": ("src.tuning.tune_transformer", "TunerTransformer"),
+        "trainer": ("src.training.train_transformer", "TrainerTransformer"),
+        "tune_kwargs": lambda: {
+            "pruner": importlib.import_module("optuna").pruners.MedianPruner(
+                n_startup_trials=5, n_warmup_steps=10
+            ),
+            "enqueue_params": [
+                {
+                    "d_model": 64,
+                    "num_heads": 4,
+                    "key_dim": 16,
+                    "ff_dim": 128,
+                    "num_blocks": 2,
+                    "dropout": 0.1,
+                    "learning_rate": 0.001,
+                    "epochs": 30,
+                }
+            ],
+        },
+    },
 }
 
 
