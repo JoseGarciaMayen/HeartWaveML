@@ -12,6 +12,7 @@ from src.utils import get_class_weights
 
 load_dotenv()
 IP = os.getenv("IP")
+CANDIDATES_DIR = "src/saved_models/candidates"
 
 
 class TrainerBase:
@@ -73,8 +74,8 @@ class TrainerBase:
         return X_train, y_train, X_cv, y_cv, class_weights
 
     def save_model(self, model, model_name):
-        os.makedirs("src/saved_models", exist_ok=True)
-        joblib.dump(model, f"src/saved_models/{model_name}.joblib")
+        os.makedirs(CANDIDATES_DIR, exist_ok=True)
+        joblib.dump(model, f"{CANDIDATES_DIR}/{model_name}.joblib")
 
     def mlflow_start(self, model, X_train, y_train, X_cv, y_cv, class_weights, params):
         raise NotImplementedError("This method should be implemented in subclasses.")

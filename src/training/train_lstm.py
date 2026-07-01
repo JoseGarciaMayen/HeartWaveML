@@ -1,4 +1,5 @@
 import gc
+import os
 
 import mlflow
 import numpy as np
@@ -66,7 +67,8 @@ class TrainerLSTM(TrainerBase):
         return model, p
 
     def save_model(self, model, model_name):
-        model.save(f"src/saved_models/{model_name}.keras")
+        os.makedirs("src/saved_models/candidates", exist_ok=True)
+        model.save(f"src/saved_models/candidates/{model_name}.keras")
 
     def mlflow_start(self, model, X_train, y_train, X_cv, y_cv, class_weights, p):
         mlflow.tensorflow.autolog(log_models=False, log_datasets=False, silent=True)

@@ -1,5 +1,6 @@
 import json
 import os
+import shutil
 
 import joblib
 import numpy as np
@@ -150,14 +151,15 @@ def _save_artifacts(name: str, metrics: dict):
     plt.close()
 
 
-def evaluate_model(key: str) -> dict:
+def evaluate_model(key: str, model_path: str | None = None) -> dict:
     cfg = EVAL_CONFIG[key]
+    model_path = model_path or cfg["model_path"]
     if "load_data" in cfg:
         X_test, y_test_arr = cfg["load_data"]()
         y_test = pd.Series(y_test_arr)
     else:
         X_test, y_test = load_test_data(cfg["test_data"])
-    model = _load_model(cfg["model_path"])
+    model = _load_model(model_path)
     y_pred = cfg["predict"](model, X_test)
     metrics = _compute_metrics(y_test, y_pred)
     _print_metrics(key, metrics)
@@ -165,15 +167,30 @@ def evaluate_model(key: str) -> dict:
     return metrics
 
 
+CANDIDATES_DIR = "src/saved_models/candidates"
+
+
 def evaluate_all() -> dict:
+    metrics_path = "src/saved_models/metrics/metrics.json"
+    prev_summary = {}
+    if os.path.exists(metrics_path):
+        with open(metrics_path) as f:
+            prev_summary = json.load(f)
+
     results = {}
+    candidates = {}
     for key in EVAL_CONFIG:
-        model_path = EVAL_CONFIG[key]["model_path"]
-        if not os.path.exists(model_path):
-            print(f"\nSkipping {key}: model artifact not found at {model_path}")
+        prod_path = EVAL_CONFIG[key]["model_path"]
+        candidate_path = f"{CANDIDATES_DIR}/{os.path.basename(prod_path)}"
+        has_candidate = os.path.exists(candidate_path)
+        eval_path = candidate_path if has_candidate else prod_path
+        if not os.path.exists(eval_path):
+            print(f"\nSkipping {key}: model artifact not found at {eval_path}")
             continue
         try:
-            results[key] = evaluate_model(key)
+            results[key] = evaluate_model(key, eval_path)
+            if has_candidate:
+                candidates[key] = candidate_path
         except Exception as e:
             print(f"\nSkipping {key}: evaluation failed ({type(e).__name__}: {e})")
             continue
@@ -181,11 +198,27 @@ def evaluate_all() -> dict:
     if not results:
         raise SystemExit("No model artifacts found to evaluate. Train at least one model first")
 
-    summary = {
-        k: {m: f"{v:.4f}" for m, v in metrics.items() if m not in _NON_SCALAR_KEYS}
-        for k, metrics in results.items()
-    }
-    with open("src/saved_models/metrics/metrics.json", "w") as f:
+    summary = dict(prev_summary)
+    for key, metrics in results.items():
+        if key not in candidates:
+            print(f"[info] {key}: no candidate pending, evaluated current production model")
+            continue
+
+        candidate_path = candidates[key]
+        prod_path = EVAL_CONFIG[key]["model_path"]
+        new_f1 = metrics["f1_macro"]
+        prev_f1 = float(prev_summary.get(key, {}).get("f1_macro", "-inf"))
+
+        if new_f1 > prev_f1:
+            summary[key] = {m: f"{v:.4f}" for m, v in metrics.items() if m not in _NON_SCALAR_KEYS}
+            shutil.copy2(candidate_path, prod_path)
+            print(f"[promoted] {key}: f1_macro {new_f1:.4f} > best {prev_f1:.4f}")
+        else:
+            print(f"[discarded] {key}: f1_macro {new_f1:.4f} <= best {prev_f1:.4f}")
+
+        os.remove(candidate_path)
+
+    with open(metrics_path, "w") as f:
         json.dump(summary, f, indent=4)
     return results
 

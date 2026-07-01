@@ -96,16 +96,16 @@
         "f2_weighted": "0.9190"
     },
     "transformer": {
-        "accuracy": "0.9425",
-        "precision": "0.9370",
-        "recall": "0.9425",
-        "f1_N": "0.9685",
-        "f1_S": "0.4151",
-        "f1_V": "0.8163",
-        "f1_macro": "0.7333",
-        "f1_weighted": "0.9370",
-        "f2_macro": "0.7114",
-        "f2_weighted": "0.9400"
+        "accuracy": "0.9470",
+        "precision": "0.9413",
+        "recall": "0.9470",
+        "f1_N": "0.9710",
+        "f1_S": "0.4264",
+        "f1_V": "0.8622",
+        "f1_macro": "0.7532",
+        "f1_weighted": "0.9429",
+        "f2_macro": "0.7375",
+        "f2_weighted": "0.9452"
     },
     "seq2seq": {
         "accuracy": "0.9445",
