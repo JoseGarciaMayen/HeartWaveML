@@ -1,12 +1,13 @@
-"""Generate beat-sequence datasets for the BiLSTM model.
+"""Generate beat-sequence datasets for BiLSTM/Seq2Seq/Transformer.
 
 Reads data/interim/mitbih_features_only.csv (46 features + class + record),
 applies the same class filtering as splitter.py, scales features (fit on train),
 builds windows of W consecutive beats per patient with replication padding at
-boundaries, and saves numpy arrays to data/processed/seq/.
+boundaries, and saves numpy arrays to --out-dir (default: data/processed/seq/).
 
 Run after the 'preprocess' DVC stage (which generates the interim CSV):
     python -m src.data.generate_sequences
+    python -m src.data.generate_sequences --window 9 --out-dir data/processed/seq_lstm
 """
 
 import os
@@ -22,11 +23,11 @@ from src.data.splitter import CV_RECORDS, DS2_RECORDS, TRAIN_RECORDS
 WINDOW = SEQUENCES.get("window", 5)
 INTERIM_PATH = "data/interim/mitbih_features_only.csv"
 OUT_DIR = "data/processed/seq"
-SCALER_PATH = "src/saved_models/scaler_seq.joblib"
 
 
 def generate_sequences(window: int = WINDOW, out_dir: str = OUT_DIR) -> None:
     K = window // 2
+    scaler_path = f"src/saved_models/scaler_{os.path.basename(out_dir.rstrip('/'))}.joblib"
 
     df = pd.read_csv(INTERIM_PATH)
     df = df[df["class"] != 4].reset_index(drop=True)
@@ -46,7 +47,7 @@ def generate_sequences(window: int = WINDOW, out_dir: str = OUT_DIR) -> None:
     X_all[test_mask] = scaler.transform(X_all[test_mask])
 
     os.makedirs("src/saved_models", exist_ok=True)
-    joblib.dump(scaler, SCALER_PATH)
+    joblib.dump(scaler, scaler_path)
 
     os.makedirs(out_dir, exist_ok=True)
 
@@ -85,9 +86,25 @@ def generate_sequences(window: int = WINDOW, out_dir: str = OUT_DIR) -> None:
             f"{split_name}: {X_arr.shape}  y_seq:{y_seq_arr.shape}  N={counts[0]}  S={counts[1]}  V={counts[2]}"
         )
 
-    print(f"\nScaler saved to {SCALER_PATH}")
+    print(f"\nScaler saved to {scaler_path}")
     print(f"Sequences saved to {out_dir}/")
 
 
 if __name__ == "__main__":
-    generate_sequences()
+    import argparse
+
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--window",
+        type=int,
+        default=WINDOW,
+        help=f"Sequence window size (default: sequences.window from config.yaml = {WINDOW})",
+    )
+    parser.add_argument(
+        "--out-dir",
+        default=OUT_DIR,
+        help=f"Output directory for the generated .npy files (default: {OUT_DIR})",
+    )
+    args = parser.parse_args()
+
+    generate_sequences(window=args.window, out_dir=args.out_dir)
