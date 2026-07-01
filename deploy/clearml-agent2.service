@@ -1,0 +1,12 @@
+[Unit]
+Description=ClearML Agent 2 (HeartWaveML) - frees the queue when a pipeline controller occupies agent 1
+After=network.target
+
+[Service]
+WorkingDirectory=/home/jose/HeartWaveML
+ExecStart=/home/jose/HeartWaveML/.venv/bin/clearml-agent daemon --queue default
+Restart=always
+User=jose
+
+[Install]
+WantedBy=multi-user.target
