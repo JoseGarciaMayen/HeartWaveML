@@ -1,9 +1,16 @@
 import numpy as np
+import pytest
 
 import src.predict as predict_module
 from src.predict import CENTER_IDX, predict
 
 MODEL = "src/saved_models/modelTransformer.keras"
+
+
+@pytest.fixture(autouse=True)
+def _clear_model_cache():
+    yield
+    predict_module._cached_model.cache_clear()
 
 
 def _dummy_beats(n=45):

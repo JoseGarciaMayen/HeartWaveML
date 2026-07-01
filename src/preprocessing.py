@@ -1,3 +1,5 @@
+import functools
+
 import joblib
 import numpy as np
 import pandas as pd
@@ -30,6 +32,11 @@ __all__ = [
 WINDOW = SEQUENCES.get("window", 45)
 
 
+@functools.lru_cache(maxsize=1)
+def _get_scaler():
+    return joblib.load("src/saved_models/scaler_seq.joblib")
+
+
 def preprocess_sequence(beats: list[dict]) -> np.ndarray:
     """Builds a (1, WINDOW, 46) scaled sequence from WINDOW ordered {signal, r_peak_sample} beats."""
     if len(beats) != WINDOW:
@@ -48,6 +55,5 @@ def preprocess_sequence(beats: list[dict]) -> np.ndarray:
 
     combined = pd.concat([features_df, rr_df.reset_index(drop=True)], axis=1)
 
-    scaler = joblib.load("src/saved_models/scaler_seq.joblib")
-    scaled = scaler.transform(combined.values)
+    scaled = _get_scaler().transform(combined.values)
     return scaled.reshape(1, len(beats), -1).astype(np.float32)
