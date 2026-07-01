@@ -22,29 +22,33 @@ This project implements an advanced machine learning pipeline for ***automated E
 
 ## Model results
 
-> ⚠️ **Note:** the table below was produced with an intra-patient (random)
-> split and is being regenerated under the patient-wise split described in
-> [Evaluation methodology](#evaluation-methodology).
+> Metrics below use the **patient-wise inter-patient split** (DS1/DS2, see
+> [Evaluation methodology](#evaluation-methodology)), no data leakage between
+> train and test. Tree-based models (XGB/LGBM/ExtraTrees/CatBoost/CONVXGB)
+> were dropped from this repo once the leakage was fixed and their honest
+> scores plateaued at f1_macro ~0.51-0.58; see `MEJORAS.md` for that history.
 
 <div align="center">
 
-| Metric | CONVXGB | XGB+feat | CNN+MLP |
-|--------|-------|--------|-------|
-| **Overall Accuracy** | ***98.51%*** | 98.48% | 98.48% |
-| **Precision** | 98.49% | 98.45% | ***98.56%*** |
-| **Recall** | ***98.51%*** | 98.48% | 98.48% |
-| **F1-Score (weighted)** | 98.48% | 98.46% | ***98.51%*** |
-| **F1-Score (macro)** | ***92.87%*** | 92.13% | 91.51% |
+| Model | F1-N | F1-S | F1-V | F1-macro |
+|-------|------|------|------|----------|
+| CNN-MLP | 0.860 | 0.080 | 0.508 | 0.483 |
+| BiLSTM (W=9) | 0.962 | 0.061 | 0.786 | 0.603 |
+| Seq2Seq BiLSTM (W=45) | 0.969 | 0.333 | 0.848 | 0.717 |
+| **Transformer (W=45)** | **0.975** | **0.647** | **0.869** | **0.830** |
 
 </div>
+
+The Transformer already exceeds the project target of f1_macro ≥ 0.80. See `CLAUDE.md` for full details.
 
 ## Evaluation methodology
 
 The dataset is split **patient-wise** (the *inter-patient* paradigm): all
 heartbeats from a given record (patient) are assigned to a single set, so no
-patient appears in both train and test. This is enforced in `split_data`
-(`src/preprocessing.py`) with `GroupShuffleSplit` grouped by the `record`
-column.
+patient appears in both train and test. This follows the de Chazal DS1/DS2
+partition and is enforced in `split_data` (`src/data/splitter.py`) via the
+fixed `DS1_RECORDS`/`DS2_RECORDS`/`CV_RECORDS` record sets (train/val come
+from DS1, test is the fully unseen DS2).
 
 This avoids **inter-patient data leakage**, where a random per-beat split lets
 the model memorise patient-specific morphology and report optimistic metrics
@@ -58,7 +62,7 @@ than an intra-patient split.
 
 - Model ***evaluation*** using appropriate metrics for multiclass classification.
 
-- Experiment tracking using ***MLflow***.
+- Experiment tracking using ***ClearML***.
 
 - ***Notebook*** for interactive experiments and visualization [here](https://www.kaggle.com/code/josegarciamayen/heartwaveml)
 
@@ -92,24 +96,21 @@ pip install -r requirements.txt
 This will fetch the models and datasets tracked with DVC and install dependencies (you probably will need a [Dagshub account](https://dagshub.com/))
 
 ### 3️⃣ Train models from scratch
-If you prefer to generate the dataset and train the models yourself, follow the
-full step-by-step runbook in [`RETRAINING.md`](RETRAINING.md) (data generation,
-patient-wise split, MLflow tuning/training and DVC versioning). In short:
+If you prefer to generate the dataset and train the models yourself:
 ```bash
 pip install -r requirements-dev.txt
 # 1. generate datasets with the patient-wise split
-python -c "from src.data.generate_data import generateData; generateData(data='no_feat')"
-python -m src.training.feature_extractor
-python -c "from src.data.generate_data import generateData; generateData(data=None)"
-# 2. start MLflow, then tune + train (see RETRAINING.md)
-python -m src.tuning.tune_convxgb
-python -m src.training.train_convxgb
+python -m src.data.generate_data --mode deterministic
+python -m src.data.generate_sequences
+# 2. start ClearML, then tune + train
+python -m src.pipeline tune transformer
+python -m src.pipeline train transformer
 ```
 Then serve the API with:
 ```bash
 python -m src.api
 ```
-This is the recommended option if you want to use this repo as a template to train your own models and try other combinations
+This is the recommended option if you want to use this repo as a template to train your own models and try other combinations. See `CLAUDE.md` for the full model list (`cnn_mlp`, `lstm`, `seq2seq`, `transformer`) and pipeline commands.
 
 ## Model Design
 
