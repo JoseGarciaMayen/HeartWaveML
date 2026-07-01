@@ -1,0 +1,5 @@
+outs:
+- md5: 307e2340920fb6781081c50121a6c5eb
+  size: 284424
+  hash: md5
+  path: modelTransformer.keras
