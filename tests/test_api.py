@@ -45,6 +45,13 @@ def test_predict_wrong_window_length_is_rejected(mock_predict):
     assert resp.status_code == 422
 
 
+def test_predict_wrong_signal_length_is_rejected(mock_predict):
+    payload = _window_payload()
+    payload["beats"][0]["signal"] = [0.0] * 100
+    resp = client.post("/predict", json=[payload])
+    assert resp.status_code == 422
+
+
 def test_batch_too_large():
     windows = [_window_payload() for _ in range(201)]
     resp = client.post("/predict", json=windows)

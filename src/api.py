@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field, field_validator
 from src.config import SEQUENCES
 
 WINDOW = SEQUENCES.get("window", 45)
+BEAT_LENGTH = 187
 
 try:
     from src.predict import predict
@@ -40,11 +41,18 @@ app.add_middleware(
 
 class Beat(BaseModel):
     signal: list[float] = Field(
-        ..., description="1D array representing a single ECG beat (187 samples)"
+        ..., description=f"1D array representing a single ECG beat ({BEAT_LENGTH} samples)"
     )
     r_peak_sample: int = Field(
         ..., description="Absolute sample index of this beat's R-peak in the recording"
     )
+
+    @field_validator("signal")
+    @classmethod
+    def _check_signal_length(cls, signal: list[float]) -> list[float]:
+        if len(signal) != BEAT_LENGTH:
+            raise ValueError(f"Expected exactly {BEAT_LENGTH} samples, got {len(signal)}")
+        return signal
 
 
 class BeatWindow(BaseModel):
