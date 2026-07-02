@@ -54,6 +54,16 @@ EVAL_CONFIG = {
             model.predict(X, batch_size=512, verbose=0)[:, X.shape[1] // 2, :], axis=1
         ),
     },
+    "tcn": {
+        "model_path": "src/saved_models/modelTCN.keras",
+        "load_data": lambda split: (
+            np.load(f"data/processed/seq/{split}_X.npy"),
+            np.load(f"data/processed/seq/{split}_y.npy"),
+        ),
+        "predict": lambda model, X: np.argmax(
+            model.predict(X, batch_size=512, verbose=0)[:, X.shape[1] // 2, :], axis=1
+        ),
+    },
 }
 
 

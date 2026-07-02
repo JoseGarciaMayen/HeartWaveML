@@ -1,6 +1,14 @@
 import argparse
+from pathlib import Path
 
 from clearml import PipelineController
+
+REQUIREMENTS_PATH = Path(__file__).resolve().parent.parent.parent / "requirements.txt"
+
+
+def _read_requirements() -> list[str]:
+    lines = REQUIREMENTS_PATH.read_text().splitlines()
+    return [line.strip() for line in lines if line.strip() and not line.strip().startswith("#")]
 
 
 def run_tune(model_name: str) -> str:
@@ -39,6 +47,7 @@ def run_evaluate(model_name: str) -> None:
 
 
 def build_pipeline(model_name: str) -> PipelineController:
+    packages = _read_requirements()
     pipe = PipelineController(name=f"{model_name}_pipeline", project="HeartWaveML", version="1.0.0")
     pipe.set_default_execution_queue("default")
     pipe.add_parameter(name="model_name", default=model_name)
@@ -47,7 +56,7 @@ def build_pipeline(model_name: str) -> PipelineController:
         function=run_tune,
         function_kwargs={"model_name": "${pipeline.model_name}"},
         function_return=["model_name"],
-        packages=False,
+        packages=packages,
     )
     pipe.add_function_step(
         name="train",
@@ -55,14 +64,14 @@ def build_pipeline(model_name: str) -> PipelineController:
         function_kwargs={"model_name": "${tune.model_name}"},
         function_return=["model_name"],
         parents=["tune"],
-        packages=False,
+        packages=packages,
     )
     pipe.add_function_step(
         name="evaluate",
         function=run_evaluate,
         function_kwargs={"model_name": "${train.model_name}"},
         parents=["train"],
-        packages=False,
+        packages=packages,
     )
     return pipe
 

@@ -18,3 +18,4 @@ imbalanced-learn==0.14.2
 psutil==5.9.6
 optuna==4.4.0
 protobuf==3.19.6
+xgboost==3.0.4

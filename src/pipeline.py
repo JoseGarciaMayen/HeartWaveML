@@ -33,6 +33,15 @@ MODELS = {
             )
         },
     },
+    "tcn": {
+        "tuner": ("src.tuning.tune_tcn", "TunerTCN"),
+        "trainer": ("src.training.train_tcn", "TrainerTCN"),
+        "tune_kwargs": lambda: {
+            "pruner": importlib.import_module("optuna").pruners.MedianPruner(
+                n_startup_trials=5, n_warmup_steps=10
+            )
+        },
+    },
 }
 
 
