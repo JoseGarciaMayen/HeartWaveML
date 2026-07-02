@@ -30,6 +30,17 @@ configure_tf_threads()
 SEQ_DIR = "data/processed/seq"
 
 
+def _positional_encoding(window, d_model):
+    """Sinusoidal positional encoding (Vaswani et al.), shape (1, window, d_model)."""
+    positions = np.arange(window)[:, np.newaxis]
+    dims = np.arange(d_model)[np.newaxis, :]
+    angle_rates = 1 / np.power(10000, (2 * (dims // 2)) / np.float32(d_model))
+    angle_rads = positions * angle_rates
+    angle_rads[:, 0::2] = np.sin(angle_rads[:, 0::2])
+    angle_rads[:, 1::2] = np.cos(angle_rads[:, 1::2])
+    return tf.constant(angle_rads[np.newaxis, ...], dtype=tf.float32)
+
+
 def _transformer_block(x, num_heads, key_dim, ff_dim, dropout):
     attn = MultiHeadAttention(num_heads=num_heads, key_dim=key_dim, dropout=dropout)
     x2 = attn(x, x)
@@ -73,6 +84,7 @@ class TrainerTransformer(TrainerBase):
         clearml_log_params({**p, "window": window, "n_features": n_features})
         inp = Input(shape=(window, n_features))
         x = Dense(p["d_model"])(inp)
+        x = x + _positional_encoding(window, p["d_model"])
         for _ in range(p["num_blocks"]):
             x = _transformer_block(x, p["num_heads"], p["key_dim"], p["ff_dim"], p["dropout"])
         x = TimeDistributed(Dense(32, activation="relu"))(x)

@@ -14,7 +14,7 @@ from tensorflow.keras.models import Model  # type: ignore
 
 from src.config import TUNING, configure_tf_threads
 from src.tracking import clearml_log_metrics, clearml_log_params
-from src.training.train_transformer import _transformer_block
+from src.training.train_transformer import _positional_encoding, _transformer_block
 from src.tuning.tuner import TunerBase
 from src.utils import (
     make_best_f1_restorer,
@@ -51,6 +51,7 @@ class TunerTransformer(TunerBase):
     def _build_model(self, d_model, num_heads, key_dim, ff_dim, num_blocks, dropout, lr):
         inp = Input(shape=(self.window, self.n_features))
         x = Dense(d_model)(inp)
+        x = x + _positional_encoding(self.window, d_model)
         for _ in range(num_blocks):
             x = _transformer_block(x, num_heads, key_dim, ff_dim, dropout)
         x = TimeDistributed(Dense(32, activation="relu"))(x)
