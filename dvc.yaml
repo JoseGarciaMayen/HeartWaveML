@@ -21,6 +21,18 @@ stages:
       - data/processed/base
       - data/processed/feat
 
+  generate_sequences:
+    cmd: python -m src.data.generate_sequences
+    deps:
+      - data/interim/mitbih_features_only.csv
+      - src/data/generate_sequences.py
+      - src/data/splitter.py
+      - src/config.py
+      - config.yaml
+    outs:
+      - data/processed/seq
+      - src/saved_models/scaler_seq.joblib
+
   evaluate:
     cmd: python -m src.evaluate
     deps:

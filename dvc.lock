@@ -35,8 +35,8 @@ stages:
       size: 4195
     - path: src/utils.py
       hash: md5
-      md5: ffe1ac56b3acc2ea98806210587f2f80
-      size: 6371
+      md5: 48fe195a3116b49d697ab914d83d1620
+      size: 6420
     outs:
     - path: data/interim/mitbih_combined_records.csv
       hash: md5
@@ -87,3 +87,36 @@ stages:
       hash: md5
       md5: 307e2340920fb6781081c50121a6c5eb
       size: 284424
+  generate_sequences:
+    cmd: python -m src.data.generate_sequences
+    deps:
+    - path: config.yaml
+      hash: md5
+      md5: e7eb5e78e81f507f45e83b37c40dacef
+      size: 2472
+    - path: data/interim/mitbih_features_only.csv
+      hash: md5
+      md5: 195862e97a44f0304924bed1bd1e274e
+      size: 79362956
+    - path: src/config.py
+      hash: md5
+      md5: db7e0d509579cd7a259734104c084264
+      size: 867
+    - path: src/data/generate_sequences.py
+      hash: md5
+      md5: 6dd45a47cb4e5558281a29aac194e834
+      size: 3331
+    - path: src/data/splitter.py
+      hash: md5
+      md5: 6becc1604f742bfb78dc4f646f4d6266
+      size: 4195
+    outs:
+    - path: data/processed/seq
+      hash: md5
+      md5: ace0b8b636b7c84261d45571b358787c.dir
+      size: 852266704
+      nfiles: 9
+    - path: src/saved_models/scaler_seq.joblib
+      hash: md5
+      md5: b31208b0acbefa677f4103f3128db9ee
+      size: 1719
