@@ -15,6 +15,7 @@ from tensorflow.keras.layers import (  # type: ignore
 )
 from tensorflow.keras.models import Model  # type: ignore
 
+from src.config import configure_tf_threads
 from src.tracking import clearml_log_metrics, clearml_log_params
 from src.training.trainer import TrainerBase
 from src.utils import (
@@ -23,6 +24,8 @@ from src.utils import (
     make_clearml_epoch_logger,
     notify_telegram,
 )
+
+configure_tf_threads()
 
 SEQ_DIR = "data/processed/seq"
 
@@ -81,6 +84,7 @@ class TrainerTransformer(TrainerBase):
             optimizer=tf.keras.optimizers.Adam(p["learning_rate"]),
             metrics=["accuracy"],
             weighted_metrics=[],
+            jit_compile=True,
         )
         return model
 

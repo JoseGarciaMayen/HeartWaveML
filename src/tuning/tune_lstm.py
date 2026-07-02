@@ -10,7 +10,7 @@ from tensorflow.keras.layers import (  # type: ignore
 )
 from tensorflow.keras.models import Model  # type: ignore
 
-from src.config import TUNING
+from src.config import TUNING, configure_tf_threads
 from src.tracking import clearml_log_metrics, clearml_log_params
 from src.tuning.tuner import TunerBase
 from src.utils import (
@@ -20,6 +20,8 @@ from src.utils import (
     make_clearml_epoch_logger,
     notify_telegram,
 )
+
+configure_tf_threads()
 
 # LSTM many-to-one uses its own W=5 window, matching train_lstm.py.
 SEQ_DIR = "data/processed/seq_lstm"
@@ -39,6 +41,7 @@ def _build_model(window, n_features, params, num_classes=3):
         loss=FocalLoss(gamma=params["gamma"]),
         optimizer=tf.keras.optimizers.Adam(params["learning_rate"]),
         metrics=["accuracy"],
+        jit_compile=True,
     )
     return model
 

@@ -17,10 +17,12 @@ from tensorflow.keras.layers import (  # type: ignore
 )
 from tensorflow.keras.models import Model  # type: ignore
 
-from src.config import DATA
+from src.config import DATA, configure_tf_threads
 from src.tracking import clearml_log_metrics, clearml_log_params
 from src.training.trainer import TrainerBase
 from src.utils import FocalLoss, make_best_f1_restorer, make_clearml_epoch_logger, notify_telegram
+
+configure_tf_threads()
 
 
 class TrainerCNNMLP(TrainerBase):
@@ -91,6 +93,7 @@ class TrainerCNNMLP(TrainerBase):
             loss=FocalLoss(gamma=p["gamma"]),
             optimizer=tf.keras.optimizers.Adam(p["learning_rate"]),
             metrics=["accuracy"],
+            jit_compile=True,
         )
         return model
 

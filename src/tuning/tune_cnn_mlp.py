@@ -17,7 +17,7 @@ from tensorflow.keras.layers import (  # type: ignore
 )
 from tensorflow.keras.models import Model  # type: ignore
 
-from src.config import DATA, TUNING
+from src.config import DATA, TUNING, configure_tf_threads
 from src.tracking import clearml_log_metrics, clearml_log_params
 from src.tuning.tuner import TunerBase
 from src.utils import (
@@ -27,6 +27,8 @@ from src.utils import (
     make_clearml_epoch_logger,
     notify_telegram,
 )
+
+configure_tf_threads()
 
 
 class TunerCNNMLP(TunerBase):
@@ -115,6 +117,7 @@ class TunerCNNMLP(TunerBase):
             loss=FocalLoss(gamma=gamma),
             optimizer=tf.keras.optimizers.Adam(learning_rate),
             metrics=["accuracy"],
+            jit_compile=True,
         )
         return model
 

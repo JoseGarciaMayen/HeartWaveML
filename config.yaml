@@ -9,6 +9,10 @@ data:
 sequences:
   window: 45  # context window for BiLSTM: K beats before + current + K beats after (K = window//2)
 
+hardware:
+  intra_op_threads: null  # null = auto (os.cpu_count()). TF CPU compute thread pool.
+  inter_op_threads: 1     # parallel independent ops; keep low, intra_op already saturates cores.
+
 # Optuna tuning config. n_trials is the quickest knob to reduce run time.
 # search_space: [min, max] for each hyperparameter.
 tuning:
