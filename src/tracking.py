@@ -46,7 +46,9 @@ def create_child_task(task_name: str, task_type: str = "training", tags: list[st
     except ImportError:
         return None
     try:
-        task = Task.create(project_name=PROJECT_NAME, task_name=task_name, task_type=task_type)
+        parent = Task.current_task()
+        project = parent.get_project_name() if parent else PROJECT_NAME
+        task = Task.create(project_name=project, task_name=task_name, task_type=task_type)
         if task is None:
             return None
         if tags:
