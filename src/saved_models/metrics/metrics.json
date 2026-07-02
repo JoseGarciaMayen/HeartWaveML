@@ -9,7 +9,8 @@
         "f1_macro": 0.6797,
         "f1_weighted": 0.9176,
         "f2_macro": 0.6953,
-        "f2_weighted": 0.9176
+        "f2_weighted": 0.9176,
+        "cv_f1_macro": 0.7657
     },
     "cnn_mlp": {
         "accuracy": 0.8186,
@@ -62,5 +63,18 @@
         "f2_macro": 0.726,
         "f2_weighted": 0.9431,
         "cv_f1_macro": 0.3806
+    },
+    "tcn": {
+        "accuracy": 0.9382,
+        "precision": 0.9283,
+        "recall": 0.9382,
+        "f1_N": 0.9667,
+        "f1_S": 0.2865,
+        "f1_V": 0.8246,
+        "f1_macro": 0.6926,
+        "f1_weighted": 0.9312,
+        "f2_macro": 0.6778,
+        "f2_weighted": 0.9352,
+        "cv_f1_macro": 0.5371
     }
 }
