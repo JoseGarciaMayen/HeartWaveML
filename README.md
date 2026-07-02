@@ -118,6 +118,13 @@ python -m src.api
 ```
 This is the recommended option if you want to use this repo as a template to train your own models and try other combinations. Available models: `cnn_mlp`, `lstm`, `seq2seq`, `transformer` (swap `transformer` for any of them in the commands above).
 
+#### CPU training performance
+
+All models are trained CPU-only (no GPU). Two things speed this up without changing results:
+
+- **XLA (`jit_compile=True`)**: instead of running each op eagerly, TensorFlow/XLA compiles the model into an optimized graph adapted to the host CPU before running it. Enabled on every `model.compile()` call in `src/training/` and `src/tuning/`.
+- **Thread pinning**: `configure_tf_threads()` (`src/config.py`) sets TF's intra/inter-op thread pools from `config.yaml` → `hardware`. Leave `intra_op_threads: null` to auto-detect via `os.cpu_count()`, or set an explicit number to cap it.
+
 ## Project Structure
 ```
 HeartWaveML/
