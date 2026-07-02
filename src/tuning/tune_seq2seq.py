@@ -73,7 +73,7 @@ class TunerSeq2Seq(TunerBase):
         )
         return model
 
-    def objective(self, trial) -> float:
+    def objective(self, trial, task=None) -> float:
         ss = self.search_space
         units1 = trial.suggest_int("units1", *ss["units1"])
         units2 = trial.suggest_int("units2", *ss["units2"])
@@ -91,7 +91,7 @@ class TunerSeq2Seq(TunerBase):
             "epochs": epochs,
         }
 
-        clearml_log_params(params)
+        clearml_log_params(params, task=task)
 
         model = self._build_model(units1, units2, dense_units, dropout, lr)
         best_f1 = make_best_f1_restorer(self.X_cv, self.y_cv_center, center_idx=self.center_idx)
@@ -104,7 +104,7 @@ class TunerSeq2Seq(TunerBase):
             validation_data=(self.X_cv, self.y_cv_seq, self.sw_cv),
             epochs=epochs,
             batch_size=256,
-            callbacks=[best_f1, cb, make_clearml_epoch_logger()],
+            callbacks=[best_f1, cb, make_clearml_epoch_logger(task=task)],
             sample_weight=self.sw_train,
             verbose=2,
         )
@@ -124,7 +124,8 @@ class TunerSeq2Seq(TunerBase):
                 "val_f1_N": float(val_f1_per[0]),
                 "val_f1_S": float(val_f1_per[1]),
                 "val_f1_V": float(val_f1_per[2]),
-            }
+            },
+            task=task,
         )
         notify_telegram(
             f"Seq2Seq trial - sv:{val_f1_sv:.4f} macro:{val_f1:.4f} "

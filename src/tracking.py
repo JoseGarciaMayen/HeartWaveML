@@ -38,19 +38,39 @@ def init_clearml(task_name: str, task_type: str = "training", tags: list[str] | 
         return None
 
 
-def clearml_log_params(params: dict, name: str = "General") -> None:
+def create_child_task(task_name: str, task_type: str = "training", tags: list[str] | None = None):
+    if not _clearml_configured():
+        return None
+    try:
+        from clearml import Task
+    except ImportError:
+        return None
+    try:
+        task = Task.create(project_name=PROJECT_NAME, task_name=task_name, task_type=task_type)
+        if task is None:
+            return None
+        if tags:
+            task.add_tags(tags)
+        task.mark_started()
+        return task
+    except Exception as e:
+        print(f"[ClearML] child task init skipped: {e}")
+        return None
+
+
+def clearml_log_params(params: dict, name: str = "General", task=None) -> None:
     from clearml import Task
 
-    task = Task.current_task()
+    task = task or Task.current_task()
     if task is None:
         return
     task.connect(dict(params), name=name)
 
 
-def clearml_log_metrics(metrics: dict) -> None:
+def clearml_log_metrics(metrics: dict, task=None) -> None:
     from clearml import Task
 
-    task = Task.current_task()
+    task = task or Task.current_task()
     if task is None:
         return
     logger = task.get_logger()

@@ -49,7 +49,9 @@ class TunerCNNMLP(TunerBase):
         self.num_classes = self.y_train.nunique()
         self.class_weights = get_class_weights(self.y_train)
 
-    def _build_model(self, trial, input_shape_cnn=(187, 1), input_shape_mlp=(36,), num_classes=3):
+    def _build_model(
+        self, trial, input_shape_cnn=(187, 1), input_shape_mlp=(36,), num_classes=3, task=None
+    ):
         search_space = self.search_space
         l2 = trial.suggest_float("l2", *search_space["l2"], log=True)
         dropout = trial.suggest_float("dropout", *search_space["dropout"])
@@ -78,7 +80,8 @@ class TunerCNNMLP(TunerBase):
                 "units_mlp1": units_mlp1,
                 "units_mlp2": units_mlp2,
                 "units_mlp3": units_mlp3,
-            }
+            },
+            task=task,
         )
 
         conv_filters = [
@@ -121,12 +124,15 @@ class TunerCNNMLP(TunerBase):
         )
         return model
 
-    def objective(self, trial) -> float:
+    def objective(self, trial, task=None) -> float:
         epochs = trial.suggest_categorical("epochs", self._epochs_choices)
-        clearml_log_params({"epochs": epochs})
+        clearml_log_params({"epochs": epochs}, task=task)
 
         model = self._build_model(
-            trial, input_shape_mlp=(self.n_mlp_features,), num_classes=self.num_classes
+            trial,
+            input_shape_mlp=(self.n_mlp_features,),
+            num_classes=self.num_classes,
+            task=task,
         )
         best_f1 = make_best_f1_restorer([self.X_cv_cnn, self.X_cv_mlp], self.y_cv, center_idx=None)
         early_stopping = tf.keras.callbacks.EarlyStopping(
@@ -141,7 +147,7 @@ class TunerCNNMLP(TunerBase):
             class_weight=self.class_weights,
             validation_data=([self.X_cv_cnn, self.X_cv_mlp], self.y_cv),
             epochs=epochs,
-            callbacks=[best_f1, early_stopping, make_clearml_epoch_logger()],
+            callbacks=[best_f1, early_stopping, make_clearml_epoch_logger(task=task)],
             verbose=2,
         )
 
@@ -159,7 +165,8 @@ class TunerCNNMLP(TunerBase):
                 "val_loss": val_loss,
                 "val_f1_macro": val_f1,
                 "val_f1_weighted": val_f1_weighted,
-            }
+            },
+            task=task,
         )
         notify_telegram(f"CNNMLP trial - f1: {val_f1:.4f}, f1_w: {val_f1_weighted:.4f}")
 

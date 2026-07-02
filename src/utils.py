@@ -189,18 +189,18 @@ def make_best_f1_restorer(X_val, y_val, center_idx=None, batch_size=512):
     return _BestF1Restorer()
 
 
-def make_clearml_epoch_logger():
-    """Keras callback that reports per-epoch train/val metrics to the active ClearML Task."""
+def make_clearml_epoch_logger(task=None):
+    """Keras callback that reports per-epoch train/val metrics to the given (or active) ClearML Task."""
     import tensorflow as tf
 
     class _ClearMLEpochLogger(tf.keras.callbacks.Callback):
         def on_epoch_end(self, epoch, logs=None):
             from clearml import Task
 
-            task = Task.current_task()
-            if task is None or not logs:
+            active_task = task or Task.current_task()
+            if active_task is None or not logs:
                 return
-            logger = task.get_logger()
+            logger = active_task.get_logger()
             for k, v in logs.items():
                 series, title = ("val", k[4:]) if k.startswith("val_") else ("train", k)
                 logger.report_scalar(title=title, series=series, value=float(v), iteration=epoch)

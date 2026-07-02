@@ -126,14 +126,47 @@ def _save_artifacts(name: str, metrics: dict):
     import matplotlib.pyplot as plt
 
     os.makedirs("src/saved_models/metrics", exist_ok=True)
+    class_labels = [CLASS_NAMES.get(c, str(c)) for c in metrics["labels"]]
     disp = ConfusionMatrixDisplay(
         confusion_matrix=metrics["cm"],
-        display_labels=[CLASS_NAMES.get(c, str(c)) for c in metrics["labels"]],
+        display_labels=class_labels,
     )
     disp.plot(cmap=plt.cm.Blues)
     plt.title(f"Confusion Matrix {name}")
     plt.savefig(f"src/saved_models/metrics/confusion_matrix_{name.lower()}.png")
     plt.close()
+
+    _report_clearml_plots(name, metrics, class_labels)
+
+
+def _report_clearml_plots(name: str, metrics: dict, class_labels: list[str]):
+    from clearml import Task
+
+    task = Task.current_task()
+    if task is None:
+        return
+    logger = task.get_logger()
+    logger.report_confusion_matrix(
+        title="Confusion Matrix",
+        series=name,
+        matrix=metrics["cm"],
+        xlabels=class_labels,
+        ylabels=class_labels,
+        iteration=0,
+    )
+    logger.report_histogram(
+        title="F1 per class",
+        series=name,
+        values=[metrics["f1_N"], metrics["f1_S"], metrics["f1_V"]],
+        labels=["N", "S", "V"],
+        xaxis="class",
+        yaxis="f1",
+        iteration=0,
+    )
+    summary_df = pd.DataFrame(
+        {k: [v] for k, v in metrics.items() if k not in _NON_SCALAR_KEYS}, index=[name]
+    )
+    logger.report_table(title="Test metrics", series=name, table_plot=summary_df, iteration=0)
 
 
 def evaluate_model(key: str, model_path: str | None = None, split: str = "test") -> dict:

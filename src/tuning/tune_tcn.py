@@ -70,7 +70,7 @@ class TunerTCN(TunerBase):
         )
         return model
 
-    def objective(self, trial) -> float:
+    def objective(self, trial, task=None) -> float:
         ss = self.search_space
         filters = trial.suggest_categorical("filters", ss["filters"])
         kernel_size = trial.suggest_categorical("kernel_size", ss["kernel_size"])
@@ -88,7 +88,7 @@ class TunerTCN(TunerBase):
             "epochs": epochs,
         }
 
-        clearml_log_params(params)
+        clearml_log_params(params, task=task)
         model = self._build_model(filters, kernel_size, num_blocks, dropout, lr)
         best_f1 = make_best_f1_restorer(self.X_cv, self.y_cv_center, center_idx=self.center_idx)
         cb = tf.keras.callbacks.EarlyStopping(
@@ -100,7 +100,7 @@ class TunerTCN(TunerBase):
             validation_data=(self.X_cv, self.y_cv_seq, self.sw_cv),
             epochs=epochs,
             batch_size=256,
-            callbacks=[best_f1, cb, make_clearml_epoch_logger()],
+            callbacks=[best_f1, cb, make_clearml_epoch_logger(task=task)],
             sample_weight=self.sw_train,
             verbose=2,
         )
@@ -120,7 +120,8 @@ class TunerTCN(TunerBase):
                 "val_f1_N": float(val_f1_per[0]),
                 "val_f1_S": float(val_f1_per[1]),
                 "val_f1_V": float(val_f1_per[2]),
-            }
+            },
+            task=task,
         )
         notify_telegram(
             f"TCN trial - sv:{val_f1_sv:.4f} macro:{val_f1:.4f} "

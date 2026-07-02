@@ -20,7 +20,7 @@ class TunerXGB(TunerBase):
         class_weights = get_class_weights(self.y_train)
         self.sw_train = self.y_train.map(class_weights).values
 
-    def objective(self, trial) -> float:
+    def objective(self, trial, task=None) -> float:
         ss = self.search_space
         params = {
             "max_depth": trial.suggest_int("max_depth", *ss["max_depth"]),
@@ -32,7 +32,7 @@ class TunerXGB(TunerBase):
             "reg_lambda": trial.suggest_float("reg_lambda", *ss["reg_lambda"]),
             "min_child_weight": trial.suggest_int("min_child_weight", *ss["min_child_weight"]),
         }
-        clearml_log_params(params)
+        clearml_log_params(params, task=task)
 
         model = XGBClassifier(
             objective="multi:softprob",
@@ -54,7 +54,8 @@ class TunerXGB(TunerBase):
                 "val_f1_N": float(val_f1_per[0]),
                 "val_f1_S": float(val_f1_per[1]),
                 "val_f1_V": float(val_f1_per[2]),
-            }
+            },
+            task=task,
         )
         notify_telegram(
             f"XGB trial - macro:{val_f1:.4f} N:{val_f1_per[0]:.3f} "

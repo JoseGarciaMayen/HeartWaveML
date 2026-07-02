@@ -24,21 +24,21 @@ class TunerBase(ABC):
         return load_splits(train_path, cv_path)
 
     @abstractmethod
-    def objective(self, trial) -> float:
+    def objective(self, trial, task=None) -> float:
         """Define the Optuna search space. Must return the metric to optimize."""
         ...
 
     def _run_trial(self, trial):
         """Wrap objective() with one ClearML Task per trial."""
-        from src.tracking import init_clearml
+        from src.tracking import create_child_task
 
-        clearml_task = init_clearml(
+        clearml_task = create_child_task(
             f"{self.experiment_name}_{self.run_id}_trial{trial.number}",
             task_type="optimizer",
             tags=[self.experiment_name, self.run_id],
         )
         try:
-            result = self.objective(trial)
+            result = self.objective(trial, task=clearml_task)
         except BaseException:
             if clearml_task is not None:
                 clearml_task.mark_stopped()

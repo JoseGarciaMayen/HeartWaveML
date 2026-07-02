@@ -60,7 +60,7 @@ class TunerLSTM(TunerBase):
         self.search_space = cfg["search_space"]
         self._patience = cfg.get("patience", 10)
 
-    def objective(self, trial) -> float:
+    def objective(self, trial, task=None) -> float:
         import gc
 
         ss = self.search_space
@@ -74,7 +74,7 @@ class TunerLSTM(TunerBase):
             "epochs": trial.suggest_categorical("epochs", ss["epochs"]),
         }
 
-        clearml_log_params(params)
+        clearml_log_params(params, task=task)
         model = _build_model(self.window, self.n_features, params)
         best_f1 = make_best_f1_restorer(self.X_cv, self.y_cv, center_idx=None)
         early_stop = tf.keras.callbacks.EarlyStopping(
@@ -90,12 +90,12 @@ class TunerLSTM(TunerBase):
             validation_data=(self.X_cv, self.y_cv),
             epochs=params["epochs"],
             batch_size=256,
-            callbacks=[best_f1, early_stop, make_clearml_epoch_logger()],
+            callbacks=[best_f1, early_stop, make_clearml_epoch_logger(task=task)],
             verbose=2,
         )
         y_pred = np.argmax(model.predict(self.X_cv, batch_size=512, verbose=0), axis=1)
         val_f1 = f1_score(self.y_cv, y_pred, average="macro", zero_division=0)
-        clearml_log_metrics({"val_f1_macro": val_f1})
+        clearml_log_metrics({"val_f1_macro": val_f1}, task=task)
 
         notify_telegram(f"LSTM trial - f1_macro: {val_f1:.4f}")
 
