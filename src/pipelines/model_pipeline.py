@@ -49,7 +49,12 @@ def run_evaluate(model_name: str) -> None:
 def build_pipeline(model_name: str) -> PipelineController:
     packages = _read_requirements()
     step_project = f"HeartWaveML/{model_name}"
-    pipe = PipelineController(name=f"{model_name}_pipeline", project="HeartWaveML", version="1.0.0")
+    pipe = PipelineController(
+        name=f"{model_name}_pipeline",
+        project="HeartWaveML",
+        version="1.0.0",
+        target_project=False,
+    )
     pipe.set_default_execution_queue("default")
     pipe.add_parameter(name="model_name", default=model_name)
     pipe.add_function_step(
