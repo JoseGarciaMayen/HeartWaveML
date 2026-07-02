@@ -1,9 +1,20 @@
 import argparse
+import os
+import sys
 
 from clearml import PipelineController
 
+REPO_ROOT = "/home/jose/HeartWaveML"
+
+
+def _chdir_repo() -> None:
+    if REPO_ROOT not in sys.path:
+        sys.path.insert(0, REPO_ROOT)
+    os.chdir(REPO_ROOT)
+
 
 def run_tune(model_name: str) -> str:
+    _chdir_repo()
     from src.pipeline import tune
 
     tune(model_name)
@@ -11,6 +22,7 @@ def run_tune(model_name: str) -> str:
 
 
 def run_train(model_name: str) -> str:
+    _chdir_repo()
     from src.pipeline import train
 
     train(model_name)
@@ -18,6 +30,7 @@ def run_train(model_name: str) -> str:
 
 
 def run_evaluate(model_name: str) -> None:
+    _chdir_repo()
     from src.pipeline import evaluate
 
     evaluate(model_name)
