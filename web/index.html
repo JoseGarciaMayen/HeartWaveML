@@ -322,8 +322,8 @@ Every beat pasted here gets classified using a sliding 45-beat window around it 
 
   <script>
     const API_URL = window.API_URL || "http://localhost:8000";
-    const WINDOW = 45; // must match sequences.window in config.yaml / src/api.py
     const BEAT_LENGTH = 187;
+    const MAX_BEATS = 5000; // must match MAX_BEATS in src/api.py
 
     const CLASSES = {
       0: "Normal beat (N)",
@@ -521,41 +521,25 @@ Every beat pasted here gets classified using a sliding 45-beat window around it 
       document.getElementById("chartSection").classList.add("show");
     }
 
-    const PREDICT_BATCH_SIZE = 200; // API caps at 200 windows per request
-
-    // Sliding 45-beat window centered on `centerIdx`, edges padded by
-    // repeating the first/last beat (mirrors src/data/generate_sequences.py's
-    // np.clip boundary handling, so beats near the start/end of a recording
-    // are classified the same way training built its windows).
-    function buildBeatWindow(signals, centerIdx, K) {
-      const n = signals.length;
-      const beats = [];
-      for (let j = centerIdx - K; j <= centerIdx + K; j++) {
-        const idx = Math.min(Math.max(j, 0), n - 1);
-        beats.push({ signal: signals[idx], r_peak_sample: idx * 300 });
+    // The whole recording is sent in one request; the server computes RR
+    // features over the full recording (matching training exactly) and
+    // internally slides a 45-beat window per beat, so no client-side
+    // windowing is needed anymore.
+    async function classifyRecording(signals) {
+      const beats = signals.map((signal, i) => ({
+        signal,
+        r_peak_sample: i * 300,
+      }));
+      const response = await fetch(`${API_URL}/predict`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ beats }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.detail || "Error en la predicción");
       }
-      return { beats };
-    }
-
-    async function classifyAllBeats(signals) {
-      const K = Math.floor(WINDOW / 2);
-      const windows = signals.map((_, i) => buildBeatWindow(signals, i, K));
-
-      const allResults = [];
-      for (let start = 0; start < windows.length; start += PREDICT_BATCH_SIZE) {
-        const chunk = windows.slice(start, start + PREDICT_BATCH_SIZE);
-        const response = await fetch(`${API_URL}/predict`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(chunk),
-        });
-        const data = await response.json();
-        if (!response.ok) {
-          throw new Error(data.detail || "Error en la predicción");
-        }
-        allResults.push(...data.results);
-      }
-      return allResults;
+      return data;
     }
 
     async function predictECG() {
@@ -598,27 +582,21 @@ Every beat pasted here gets classified using a sliding 45-beat window around it 
             }
           }
 
+          if (signals.length > MAX_BEATS) {
+            showError(`Too many beats. Maximum: ${MAX_BEATS}, received: ${signals.length}`);
+            return;
+          }
+
           document.getElementById("loading").style.display = "block";
           document.getElementById("results").classList.remove("show");
           document.getElementById("error").style.display = "none";
 
-          const results = await classifyAllBeats(signals);
+          const data = await classifyRecording(signals);
 
           const tally = {};
           Object.keys(CLASSES).forEach((id) => (tally[id] = 0));
-          let successCount = 0;
-          let failedCount = 0;
-          let totalTime = 0;
-
-          results.forEach((r) => {
-            if (r.success) {
-              const classId = r.result.prediction;
-              tally[classId] = (tally[classId] || 0) + 1;
-              totalTime += r.result.processing_time_ms;
-              successCount++;
-            } else {
-              failedCount++;
-            }
+          data.predictions.forEach((p) => {
+            tally[p.prediction] = (tally[p.prediction] || 0) + 1;
           });
 
           const resultText = Object.entries(CLASSES)
@@ -627,11 +605,9 @@ Every beat pasted here gets classified using a sliding 45-beat window around it 
 
           document.getElementById("resultValue").textContent = resultText;
           document.getElementById("resultDescription").textContent =
-            `Beats classified: ${successCount} of ${signals.length}` +
-            (failedCount ? ` (${failedCount} failed)` : "");
-          document.getElementById("processingTime").textContent = successCount
-            ? (totalTime / successCount).toFixed(2)
-            : "N/A";
+            `Beats classified: ${data.n_beats}`;
+          document.getElementById("processingTime").textContent =
+            data.processing_time_ms.toFixed(2);
 
           document.getElementById("results").classList.add("show");
 
@@ -666,7 +642,7 @@ Every beat pasted here gets classified using a sliding 45-beat window around it 
       return beat;
     }
 
-    const EXAMPLE_BEAT_COUNT = 60; // > WINDOW, demos classifying a full recording
+    const EXAMPLE_BEAT_COUNT = 60; // > server's internal 45-beat window, demos a full recording
 
     function loadExample() {
       const exampleData = [];

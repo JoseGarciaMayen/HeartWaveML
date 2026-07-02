@@ -7,17 +7,15 @@ import src.api as api
 
 client = TestClient(api.app)
 
-WINDOW = api.WINDOW
 
-
-def _window_payload(n=WINDOW):
+def _recording_payload(n=50):
     return {"beats": [{"signal": [0.0] * 187, "r_peak_sample": i * 300} for i in range(n)]}
 
 
 @pytest.fixture
 def mock_predict(monkeypatch):
     monkeypatch.setattr(api, "PREDICT_AVAILABLE", True)
-    monkeypatch.setattr(api, "predict", lambda beats: 2, raising=False)
+    monkeypatch.setattr(api, "predict_record", lambda beats: [2] * len(beats), raising=False)
 
 
 def test_health_ok():
@@ -32,27 +30,28 @@ def test_info_endpoint():
     assert resp.json()["api_name"] == "HeartWaveML API"
 
 
-def test_predict_valid_window(mock_predict):
-    resp = client.post("/predict", json=[_window_payload()])
+def test_predict_valid_recording(mock_predict):
+    resp = client.post("/predict", json=_recording_payload(n=50))
     assert resp.status_code == 200
     body = resp.json()
-    assert body["successful_predictions"] == 1
-    assert body["results"][0]["result"]["prediction"] == 2.0
+    assert body["n_beats"] == 50
+    assert len(body["predictions"]) == 50
+    assert body["predictions"][0]["prediction"] == 2
 
 
-def test_predict_wrong_window_length_is_rejected(mock_predict):
-    resp = client.post("/predict", json=[_window_payload(n=10)])
+def test_predict_empty_beats_is_rejected(mock_predict):
+    resp = client.post("/predict", json={"beats": []})
     assert resp.status_code == 422
 
 
 def test_predict_wrong_signal_length_is_rejected(mock_predict):
-    payload = _window_payload()
+    payload = _recording_payload()
     payload["beats"][0]["signal"] = [0.0] * 100
-    resp = client.post("/predict", json=[payload])
+    resp = client.post("/predict", json=payload)
     assert resp.status_code == 422
 
 
-def test_batch_too_large():
-    windows = [_window_payload() for _ in range(201)]
-    resp = client.post("/predict", json=windows)
-    assert resp.status_code == 400
+def test_predict_too_many_beats_is_rejected(mock_predict, monkeypatch):
+    monkeypatch.setattr(api, "MAX_BEATS", 10)
+    resp = client.post("/predict", json=_recording_payload(n=11))
+    assert resp.status_code == 422

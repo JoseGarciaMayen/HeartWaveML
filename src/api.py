@@ -12,8 +12,10 @@ from src.config import SEQUENCES
 WINDOW = SEQUENCES.get("window", 45)
 BEAT_LENGTH = 187
 
+MAX_BEATS = 5000
+
 try:
-    from src.predict import predict
+    from src.predict import predict_record
 
     PREDICT_AVAILABLE = True
 except ImportError as e:
@@ -55,25 +57,34 @@ class Beat(BaseModel):
         return signal
 
 
-class BeatWindow(BaseModel):
+class ECGRecording(BaseModel):
     beats: list[Beat] = Field(
         ...,
         description=(
-            f"Exactly {WINDOW} consecutive, already-segmented beats in recording order. "
-            "The API returns the class of the center beat."
+            "All ordered, already-segmented beats of one ECG recording. "
+            "The API returns the class of every beat."
         ),
     )
 
     @field_validator("beats")
     @classmethod
     def _check_length(cls, beats: list[Beat]) -> list[Beat]:
-        if len(beats) != WINDOW:
-            raise ValueError(f"Expected exactly {WINDOW} beats, got {len(beats)}")
+        if len(beats) == 0:
+            raise ValueError("beats must not be empty")
+        if len(beats) > MAX_BEATS:
+            raise ValueError(f"Too many beats. Maximum: {MAX_BEATS}, received: {len(beats)}")
         return beats
 
 
+class BeatPrediction(BaseModel):
+    index: int
+    r_peak_sample: int
+    prediction: int
+
+
 class PredictionResponse(BaseModel):
-    prediction: float
+    predictions: list[BeatPrediction]
+    n_beats: int
     timestamp: str
     processing_time_ms: float
 
@@ -106,8 +117,8 @@ def api_info():
 
     model_info = {
         "model_type": "Transformer",
-        "input_shape": f"({WINDOW}, 46) beat window",
-        "output": "Classification of the center beat",
+        "input_shape": f"(n_beats, {WINDOW}, 46) sliding windows over a full ECG recording",
+        "output": "Classification of every beat in the recording",
         "available": PREDICT_AVAILABLE,
     }
 
@@ -120,33 +131,9 @@ def api_info():
     )
 
 
-@app.post("/predict", tags=["Prediction"])
-def classify_ecg_batch(windows: list[BeatWindow]):
-    """Classifies the center beat of a batch of independent beat windows"""
-    if len(windows) > 200:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Batch size too large. Maximum: 200 windows, received: {len(windows)}",
-        )
-
-    results = []
-    for i, window in enumerate(windows):
-        try:
-            result = classify_ecg(window)
-            results.append({"index": i, "success": True, "result": result})
-        except Exception as e:
-            results.append({"index": i, "success": False, "error": str(e)})
-
-    return {
-        "total_windows": len(windows),
-        "successful_predictions": sum(1 for r in results if r["success"]),
-        "failed_predictions": sum(1 for r in results if not r["success"]),
-        "results": results,
-    }
-
-
-def classify_ecg(window: BeatWindow):
-    """Classifies the center beat of a single beat window"""
+@app.post("/predict", response_model=PredictionResponse, tags=["Prediction"])
+def classify_ecg(recording: ECGRecording):
+    """Classifies every beat of one ECG recording"""
     global prediction_count, error_count
 
     start_processing = time.time()
@@ -160,16 +147,20 @@ def classify_ecg(window: BeatWindow):
             )
 
         beats = [
-            {"signal": beat.signal, "r_peak_sample": beat.r_peak_sample} for beat in window.beats
+            {"signal": beat.signal, "r_peak_sample": beat.r_peak_sample} for beat in recording.beats
         ]
 
-        prediction = predict(beats)
+        predictions = predict_record(beats)
 
         prediction_count += 1
         processing_time = (time.time() - start_processing) * 1000
 
         return PredictionResponse(
-            prediction=float(prediction),
+            predictions=[
+                BeatPrediction(index=i, r_peak_sample=beat.r_peak_sample, prediction=pred)
+                for i, (beat, pred) in enumerate(zip(recording.beats, predictions, strict=True))
+            ],
+            n_beats=len(predictions),
             timestamp=datetime.now().isoformat(),
             processing_time_ms=round(processing_time, 2),
         )
