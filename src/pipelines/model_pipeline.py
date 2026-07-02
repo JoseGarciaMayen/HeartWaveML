@@ -72,4 +72,4 @@ if __name__ == "__main__":
     parser.add_argument("model", choices=list(MODELS))
     args = parser.parse_args()
     pipe = build_pipeline(args.model)
-    pipe.start(queue=None)
+    pipe.start(queue="default")
