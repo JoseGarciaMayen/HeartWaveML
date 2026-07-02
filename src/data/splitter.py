@@ -85,10 +85,20 @@ def split_data(path="data/interim/mitbih_combined_records.csv"):
     X_cv, y_cv = X[cv_mask], y[cv_mask]
     X_test, y_test = X[test_mask], y[test_mask]
 
+    sample_cols = [c for c in X.columns if c.startswith("sample_")]
     b, a = get_filter_coeffs()
-    X_train_filtered = np.apply_along_axis(apply_filter, axis=1, arr=X_train, b=b, a=a)
-    X_cv_filtered = np.apply_along_axis(apply_filter, axis=1, arr=X_cv, b=b, a=a)
-    X_test_filtered = np.apply_along_axis(apply_filter, axis=1, arr=X_test, b=b, a=a)
+
+    def _filter_samples(X_split):
+        X_split = X_split.copy()
+        if sample_cols:
+            X_split[sample_cols] = np.apply_along_axis(
+                apply_filter, axis=1, arr=X_split[sample_cols].values, b=b, a=a
+            )
+        return X_split
+
+    X_train_filtered = _filter_samples(X_train)
+    X_cv_filtered = _filter_samples(X_cv)
+    X_test_filtered = _filter_samples(X_test)
 
     scaler = StandardScaler()
     X_train_scaled = scaler.fit_transform(X_train_filtered)
