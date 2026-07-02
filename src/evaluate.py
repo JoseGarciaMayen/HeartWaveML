@@ -20,7 +20,7 @@ from src.config import DATA
 EVAL_CONFIG = {
     "cnn_mlp": {
         "model_path": "src/saved_models/modelCNNMLP.keras",
-        "test_data": DATA["feat_test"],
+        "data_path": lambda split: DATA[f"feat_{split}"],
         "predict": lambda model, X: np.argmax(
             model.predict([X.iloc[:, :187].values.reshape(-1, 187, 1), X.iloc[:, 187:].values]),
             axis=1,
@@ -28,17 +28,17 @@ EVAL_CONFIG = {
     },
     "lstm": {
         "model_path": "src/saved_models/modelLSTM.keras",
-        "load_data": lambda: (
-            np.load("data/processed/seq_lstm/test_X.npy"),
-            np.load("data/processed/seq_lstm/test_y.npy"),
+        "load_data": lambda split: (
+            np.load(f"data/processed/seq_lstm/{split}_X.npy"),
+            np.load(f"data/processed/seq_lstm/{split}_y.npy"),
         ),
         "predict": lambda model, X: np.argmax(model.predict(X, batch_size=512, verbose=0), axis=1),
     },
     "transformer": {
         "model_path": "src/saved_models/modelTransformer.keras",
-        "load_data": lambda: (
-            np.load("data/processed/seq/test_X.npy"),
-            np.load("data/processed/seq/test_y.npy"),
+        "load_data": lambda split: (
+            np.load(f"data/processed/seq/{split}_X.npy"),
+            np.load(f"data/processed/seq/{split}_y.npy"),
         ),
         "predict": lambda model, X: np.argmax(
             model.predict(X, batch_size=512, verbose=0)[:, X.shape[1] // 2, :], axis=1
@@ -46,9 +46,9 @@ EVAL_CONFIG = {
     },
     "seq2seq": {
         "model_path": "src/saved_models/modelSeq2Seq.keras",
-        "load_data": lambda: (
-            np.load("data/processed/seq/test_X.npy"),
-            np.load("data/processed/seq/test_y.npy"),
+        "load_data": lambda split: (
+            np.load(f"data/processed/seq/{split}_X.npy"),
+            np.load(f"data/processed/seq/{split}_y.npy"),
         ),
         "predict": lambda model, X: np.argmax(
             model.predict(X, batch_size=512, verbose=0)[:, X.shape[1] // 2, :], axis=1
@@ -57,7 +57,7 @@ EVAL_CONFIG = {
 }
 
 
-def load_test_data(path: str):
+def load_csv_split(path: str):
     df = pd.read_csv(path)
     return df.drop("class", axis=1), df["class"]
 
@@ -121,19 +121,20 @@ def _save_artifacts(name: str, metrics: dict):
     plt.close()
 
 
-def evaluate_model(key: str, model_path: str | None = None) -> dict:
+def evaluate_model(key: str, model_path: str | None = None, split: str = "test") -> dict:
     cfg = EVAL_CONFIG[key]
     model_path = model_path or cfg["model_path"]
     if "load_data" in cfg:
-        X_test, y_test_arr = cfg["load_data"]()
-        y_test = pd.Series(y_test_arr)
+        X, y_arr = cfg["load_data"](split)
+        y = pd.Series(y_arr)
     else:
-        X_test, y_test = load_test_data(cfg["test_data"])
+        X, y = load_csv_split(cfg["data_path"](split))
     model = _load_model(model_path)
-    y_pred = cfg["predict"](model, X_test)
-    metrics = _compute_metrics(y_test, y_pred)
-    _print_metrics(key, metrics)
-    _save_artifacts(key, metrics)
+    y_pred = cfg["predict"](model, X)
+    metrics = _compute_metrics(y, y_pred)
+    _print_metrics(f"{key} ({split})", metrics)
+    if split == "test":
+        _save_artifacts(key, metrics)
     return metrics
 
 
@@ -141,52 +142,75 @@ CANDIDATES_DIR = "src/saved_models/candidates"
 
 
 def evaluate_all() -> dict:
+    """Selection uses the CV split only. Test is evaluated once per run, purely
+    for reporting, and never decides promotion (avoids test-set leakage)."""
     metrics_path = "src/saved_models/metrics/metrics.json"
     prev_summary = {}
     if os.path.exists(metrics_path):
         with open(metrics_path) as f:
             prev_summary = json.load(f)
 
+    summary = dict(prev_summary)
     results = {}
-    candidates = {}
     for key in EVAL_CONFIG:
         prod_path = EVAL_CONFIG[key]["model_path"]
         candidate_path = f"{CANDIDATES_DIR}/{os.path.basename(prod_path)}"
         has_candidate = os.path.exists(candidate_path)
-        eval_path = candidate_path if has_candidate else prod_path
-        if not os.path.exists(eval_path):
-            print(f"\nSkipping {key}: model artifact not found at {eval_path}")
+        prod_exists = os.path.exists(prod_path)
+
+        if not has_candidate and not prod_exists:
+            print(f"\nSkipping {key}: model artifact not found")
             continue
+
+        cv_f1 = None
+        if has_candidate:
+            try:
+                cand_cv = evaluate_model(key, candidate_path, split="cv")["f1_macro"]
+            except Exception as e:
+                print(f"\nSkipping candidate {key}: cv evaluation failed ({type(e).__name__}: {e})")
+                cand_cv = None
+
+            if cand_cv is not None:
+                prev_cv = float("-inf")
+                if prod_exists:
+                    prev_cv = evaluate_model(key, prod_path, split="cv")["f1_macro"]
+
+                if cand_cv > prev_cv:
+                    shutil.copy2(candidate_path, prod_path)
+                    prod_exists = True
+                    cv_f1 = cand_cv
+                    print(f"[promoted] {key}: cv_f1_macro {cand_cv:.4f} > {prev_cv:.4f}")
+                else:
+                    cv_f1 = prev_cv
+                    print(
+                        f"[discarded] {key}: candidate cv_f1_macro {cand_cv:.4f} <= {prev_cv:.4f}"
+                    )
+
+            os.remove(candidate_path)
+
+        if not prod_exists:
+            print(
+                f"\nSkipping {key}: candidate failed cv evaluation and no production model exists"
+            )
+            continue
+
         try:
-            results[key] = evaluate_model(key, eval_path)
-            if has_candidate:
-                candidates[key] = candidate_path
+            test_metrics = evaluate_model(key, prod_path, split="test")
         except Exception as e:
-            print(f"\nSkipping {key}: evaluation failed ({type(e).__name__}: {e})")
+            print(f"\nSkipping {key}: test evaluation failed ({type(e).__name__}: {e})")
             continue
+
+        if cv_f1 is None:
+            cv_f1 = evaluate_model(key, prod_path, split="cv")["f1_macro"]
+
+        results[key] = test_metrics
+        summary[key] = {
+            m: round(float(v), 4) for m, v in test_metrics.items() if m not in _NON_SCALAR_KEYS
+        }
+        summary[key]["cv_f1_macro"] = round(float(cv_f1), 4)
 
     if not results:
         raise SystemExit("No model artifacts found to evaluate. Train at least one model first")
-
-    summary = dict(prev_summary)
-    for key, metrics in results.items():
-        if key not in candidates:
-            print(f"[info] {key}: no candidate pending, evaluated current production model")
-            continue
-
-        candidate_path = candidates[key]
-        prod_path = EVAL_CONFIG[key]["model_path"]
-        new_f1 = metrics["f1_macro"]
-        prev_f1 = float(prev_summary.get(key, {}).get("f1_macro", "-inf"))
-
-        if new_f1 > prev_f1:
-            summary[key] = {m: f"{v:.4f}" for m, v in metrics.items() if m not in _NON_SCALAR_KEYS}
-            shutil.copy2(candidate_path, prod_path)
-            print(f"[promoted] {key}: f1_macro {new_f1:.4f} > best {prev_f1:.4f}")
-        else:
-            print(f"[discarded] {key}: f1_macro {new_f1:.4f} <= best {prev_f1:.4f}")
-
-        os.remove(candidate_path)
 
     with open(metrics_path, "w") as f:
         json.dump(summary, f, indent=4)
