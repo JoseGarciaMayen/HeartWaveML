@@ -42,6 +42,15 @@ MODELS = {
             )
         },
     },
+    "xgb": {
+        "tuner": ("src.tuning.tune_xgb", "TunerXGB"),
+        "trainer": ("src.training.train_xgb", "TrainerXGB"),
+        "tune_kwargs": lambda: {
+            "pruner": importlib.import_module("optuna").pruners.MedianPruner(
+                n_startup_trials=5, n_warmup_steps=10
+            )
+        },
+    },
 }
 
 

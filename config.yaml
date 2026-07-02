@@ -68,3 +68,15 @@ tuning:
       dropout:       [0.0, 0.3]
       learning_rate: [0.0001, 0.01]
       epochs:        [20, 30, 50]
+
+  xgb:
+    n_trials: 30
+    search_space:
+      max_depth:        [3, 10]
+      learning_rate:    [0.01, 0.3]
+      n_estimators:     [100, 500]
+      subsample:        [0.6, 1.0]
+      colsample_bytree: [0.6, 1.0]
+      reg_alpha:        [0.0, 1.0]
+      reg_lambda:       [0.0, 2.0]
+      min_child_weight: [1, 10]

@@ -64,6 +64,11 @@ EVAL_CONFIG = {
             model.predict(X, batch_size=512, verbose=0)[:, X.shape[1] // 2, :], axis=1
         ),
     },
+    "xgb": {
+        "model_path": "src/saved_models/modelXGB.joblib",
+        "data_path": lambda split: DATA[f"feat_{split}"],
+        "predict": lambda model, X: model.predict(X),
+    },
 }
 
 
