@@ -48,6 +48,7 @@ def run_evaluate(model_name: str) -> None:
 
 def build_pipeline(model_name: str) -> PipelineController:
     packages = _read_requirements()
+    step_project = f"HeartWaveML/{model_name}"
     pipe = PipelineController(name=f"{model_name}_pipeline", project="HeartWaveML", version="1.0.0")
     pipe.set_default_execution_queue("default")
     pipe.add_parameter(name="model_name", default=model_name)
@@ -57,6 +58,7 @@ def build_pipeline(model_name: str) -> PipelineController:
         function_kwargs={"model_name": "${pipeline.model_name}"},
         function_return=["model_name"],
         packages=packages,
+        project_name=step_project,
     )
     pipe.add_function_step(
         name="train",
@@ -65,6 +67,7 @@ def build_pipeline(model_name: str) -> PipelineController:
         function_return=["model_name"],
         parents=["tune"],
         packages=packages,
+        project_name=step_project,
     )
     pipe.add_function_step(
         name="evaluate",
@@ -72,6 +75,7 @@ def build_pipeline(model_name: str) -> PipelineController:
         function_kwargs={"model_name": "${train.model_name}"},
         parents=["train"],
         packages=packages,
+        project_name=step_project,
     )
     return pipe
 
