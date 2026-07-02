@@ -15,8 +15,9 @@ def run_tune(model_name: str) -> str:
     import os
     import sys
 
-    sys.path.insert(0, "/home/jose/HeartWaveML")
-    os.chdir("/home/jose/HeartWaveML")
+    repo_path = os.environ.get("HEARTWAVEML_REPO", os.path.expanduser("~/HeartWaveML"))
+    sys.path.insert(0, repo_path)
+    os.chdir(repo_path)
     from src.pipeline import tune
 
     tune(model_name)
@@ -27,8 +28,9 @@ def run_train(model_name: str) -> str:
     import os
     import sys
 
-    sys.path.insert(0, "/home/jose/HeartWaveML")
-    os.chdir("/home/jose/HeartWaveML")
+    repo_path = os.environ.get("HEARTWAVEML_REPO", os.path.expanduser("~/HeartWaveML"))
+    sys.path.insert(0, repo_path)
+    os.chdir(repo_path)
     from src.pipeline import train
 
     train(model_name)
@@ -39,14 +41,15 @@ def run_evaluate(model_name: str) -> None:
     import os
     import sys
 
-    sys.path.insert(0, "/home/jose/HeartWaveML")
-    os.chdir("/home/jose/HeartWaveML")
+    repo_path = os.environ.get("HEARTWAVEML_REPO", os.path.expanduser("~/HeartWaveML"))
+    sys.path.insert(0, repo_path)
+    os.chdir(repo_path)
     from src.pipeline import evaluate
 
     evaluate(model_name)
 
 
-def build_pipeline(model_name: str) -> PipelineController:
+def build_pipeline(model_name: str, queue: str = "default") -> PipelineController:
     packages = _read_requirements()
     step_project = f"HeartWaveML/{model_name}"
     pipe = PipelineController(
@@ -55,7 +58,7 @@ def build_pipeline(model_name: str) -> PipelineController:
         version="1.0.0",
         target_project=False,
     )
-    pipe.set_default_execution_queue("default")
+    pipe.set_default_execution_queue(queue)
     pipe.add_parameter(name="model_name", default=model_name)
     pipe.add_function_step(
         name="tune",
@@ -90,6 +93,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("model", choices=list(MODELS))
+    parser.add_argument("--queue", default="default")
     args = parser.parse_args()
-    pipe = build_pipeline(args.model)
-    pipe.start(queue="default")
+    pipe = build_pipeline(args.model, queue=args.queue)
+    pipe.start(queue=args.queue)
