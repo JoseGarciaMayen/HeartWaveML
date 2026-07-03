@@ -1,8 +1,6 @@
 -r requirements.txt
-optuna==4.4.0
 jupyter==1.0.0
 pytest==8.4.1
 httpx==0.28.1
 ruff==0.15.17
-dvc-s3==3.3.0
 pathspec==0.12.1

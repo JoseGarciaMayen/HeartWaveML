@@ -19,3 +19,4 @@ psutil==5.9.6
 optuna==4.4.0
 protobuf==3.19.6
 xgboost==3.0.4
+dvc-s3==3.3.0
