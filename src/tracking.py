@@ -88,7 +88,6 @@ def clearml_get_best_params(experiment_name: str, run_id: str | None = None) -> 
         return task.get_parameters_as_dict(cast=True).get("General", {})
 
     tasks = Task.get_tasks(
-        project_name=PROJECT_NAME,
         tags=[experiment_name],
         task_filter={"type": ["optimizer"], "status": ["completed"]},
     )
