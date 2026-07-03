@@ -31,3 +31,5 @@ mlflow.log
 retrain.py
 *.md
 !README.md
+!CONTRIBUTING.md
+!docs/*.md
