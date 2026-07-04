@@ -54,8 +54,8 @@ DS2_RECORDS = {
     "233",
     "234",
 }
-# Validation records carved out of DS1.
-CV_RECORDS = {"108", "205", "223"}
+# Validation records carved out of DS1. Ricos en S (201,118,223) para estimar F1-S.
+CV_RECORDS = {"223", "201", "118"}
 TRAIN_RECORDS = DS1_RECORDS - CV_RECORDS
 
 
