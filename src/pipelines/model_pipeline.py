@@ -55,7 +55,7 @@ def build_pipeline(model_name: str, queue: str = "default") -> PipelineControlle
     pipe = PipelineController(
         name=f"{model_name}_pipeline",
         project="HeartWaveML",
-        version="1.0.0",
+        version="1.0.1",
         target_project=False,
     )
     pipe.set_default_execution_queue(queue)

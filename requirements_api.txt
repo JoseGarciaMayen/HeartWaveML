@@ -8,5 +8,6 @@ python-dotenv==1.1.1
 requests==2.34.2
 psutil==5.9.6
 scikit-learn==1.7.1
-tensorflow==2.10.0
+tensorflow==2.10.0; platform_machine == "x86_64"
+tensorflow-cpu-aws==2.10.0; platform_machine == "aarch64"
 pyyaml>=6.0
