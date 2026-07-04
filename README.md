@@ -49,7 +49,6 @@ uncorrupted features, and kept because it's competitive.
 | Model | F1-N | F1-S | F1-V | F1-macro |
 |-------|------|------|------|----------|
 | CNN-MLP | 0.894 | 0.118 | 0.465 | 0.492 |
-| BiLSTM (W=9) | 0.959 | 0.070 | 0.737 | 0.589 |
 | XGBoost (tabular baseline) | 0.955 | 0.324 | 0.759 | 0.680 |
 | TCN (W=45) | 0.967 | 0.286 | 0.825 | 0.693 |
 | Seq2Seq BiLSTM (W=45) | 0.972 | 0.446 | 0.814 | 0.744 |
@@ -80,7 +79,7 @@ than an intra-patient split.
 ## Features
 - Data **preprocessing** and **feature extraction** from raw ECG signals.
 
-- **Tuning and training** of several sequence models (BiLSTM, Seq2Seq, **Transformer**) and a CNN-MLP baseline using **TensorFlow**.
+- **Tuning and training** of several sequence models (Seq2Seq BiLSTM, **Transformer**, TCN) and a CNN-MLP baseline using **TensorFlow**.
 
 - Model **evaluation** using appropriate metrics for multiclass classification.
 
@@ -132,7 +131,7 @@ Then serve the API with:
 ```bash
 python -m src.api
 ```
-This is the recommended option if you want to use this repo as a template to train your own models and try other combinations. Available models: `cnn_mlp`, `lstm`, `seq2seq`, `transformer`, `tcn`, `xgb` (swap `transformer` for any of them in the commands above).
+This is the recommended option if you want to use this repo as a template to train your own models and try other combinations. Available models: `cnn_mlp`, `seq2seq`, `transformer`, `tcn`, `xgb` (swap `transformer` for any of them in the commands above).
 
 #### CPU training performance
 
@@ -155,7 +154,7 @@ HeartWaveML/
 │   ├── data/
 │   │   ├── download_dataset.py   # Script to download dataset
 │   │   ├── generate_data.py      # Script to generate the base/feat datasets
-│   │   ├── generate_sequences.py # Builds (N, W, 46) windows for BiLSTM/Seq2Seq/Transformer
+│   │   ├── generate_sequences.py # Builds (N, W, 46) windows for Seq2Seq/Transformer/TCN
 │   │   ├── features.py           # 36 morphological + 10 RR/HRV features
 │   │   └── splitter.py           # Inter-patient DS1/DS2 split (de Chazal)
 │   ├── training/                 # Training logic (trainer.py + one train_*.py per model)
@@ -237,7 +236,7 @@ Per the AAMI convention, class 3 (Fusion) is **remapped into class 2**
 artifact rather than a heart rhythm to classify. This leaves the 3 final
 classes (N/S/V) reported in [Model results](#model-results).
 
-To fix the extreme class imbalance we use per-class weights instead of oversampling: `class_weight` for the many-to-one models (CNN-MLP, BiLSTM) and a per-position `sample_weight` array for the many-to-many models (Seq2Seq, Transformer), both computed in `src/utils.py`.
+To fix the extreme class imbalance we use per-class weights instead of oversampling: `class_weight` for the many-to-one CNN-MLP and a per-position `sample_weight` array for the many-to-many models (Seq2Seq, Transformer, TCN), both computed in `src/utils.py`.
 
 ```python
 def get_class_weights(y_train):
@@ -255,7 +254,7 @@ And then we split the data into train, validation and test. Each model consumes 
 |--------|-------|-------|
 | **base** | Scaled and filtered 187-sample signal | (kept for reference) |
 | **feat** | Signal + 46 engineered features | CNN-MLP |
-| **seq** | (N, W, 46) sequence windows around each beat | BiLSTM, Seq2Seq, Transformer |
+| **seq** | (N, W, 46) sequence windows around each beat | Seq2Seq, Transformer, TCN |
 
 </div>
 

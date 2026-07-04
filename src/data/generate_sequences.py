@@ -1,5 +1,3 @@
-"""Builds W-beat sequence windows for BiLSTM/Seq2Seq/Transformer from mitbih_features_only.csv."""
-
 import os
 
 import joblib

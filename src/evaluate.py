@@ -26,14 +26,6 @@ EVAL_CONFIG = {
             axis=1,
         ),
     },
-    "lstm": {
-        "model_path": "src/saved_models/modelLSTM.keras",
-        "load_data": lambda split: (
-            np.load(f"data/processed/seq_lstm/{split}_X.npy"),
-            np.load(f"data/processed/seq_lstm/{split}_y.npy"),
-        ),
-        "predict": lambda model, X: np.argmax(model.predict(X, batch_size=512, verbose=0), axis=1),
-    },
     "transformer": {
         "model_path": "src/saved_models/modelTransformer.keras",
         "load_data": lambda split: (

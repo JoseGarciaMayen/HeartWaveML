@@ -11,10 +11,6 @@ MODELS = {
             )
         },
     },
-    "lstm": {
-        "tuner": ("src.tuning.tune_lstm", "TunerLSTM"),
-        "trainer": ("src.training.train_lstm", "TrainerLSTM"),
-    },
     "seq2seq": {
         "tuner": ("src.tuning.tune_seq2seq", "TunerSeq2Seq"),
         "trainer": ("src.training.train_seq2seq", "TrainerSeq2Seq"),
