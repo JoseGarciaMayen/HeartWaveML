@@ -1,9 +1,11 @@
 import argparse
 from pathlib import Path
 
-from clearml import PipelineController
+from clearml import PipelineController, Task
 
 REQUIREMENTS_PATH = Path(__file__).resolve().parent.parent.parent / "requirements.txt"
+
+Task.force_requirements_env_freeze(requirements_file=str(REQUIREMENTS_PATH))
 
 
 def _read_requirements() -> list[str]:
