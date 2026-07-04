@@ -69,7 +69,6 @@ class TunerSeq2Seq(TunerBase):
             optimizer=tf.keras.optimizers.Adam(lr),
             metrics=["accuracy"],
             weighted_metrics=[],
-            jit_compile=True,
         )
         return model
 
@@ -103,7 +102,7 @@ class TunerSeq2Seq(TunerBase):
             self.y_train_seq,
             validation_data=(self.X_cv, self.y_cv_seq, self.sw_cv),
             epochs=epochs,
-            batch_size=256,
+            batch_size=128,
             callbacks=[best_f1, cb, make_clearml_epoch_logger(task=task)],
             sample_weight=self.sw_train,
             verbose=2,

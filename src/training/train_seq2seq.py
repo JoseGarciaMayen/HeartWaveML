@@ -71,7 +71,6 @@ class TrainerSeq2Seq(TrainerBase):
             optimizer=tf.keras.optimizers.Adam(p["learning_rate"]),
             metrics=["accuracy"],
             weighted_metrics=[],
-            jit_compile=True,
         )
         return model
 
@@ -102,7 +101,7 @@ class TrainerSeq2Seq(TrainerBase):
             y_train_seq,
             validation_data=(X_cv, y_cv_seq, sw_cv),
             epochs=p.get("epochs", 50),
-            batch_size=256,
+            batch_size=128,
             callbacks=[best_f1, cb, make_clearml_epoch_logger()],
             sample_weight=sw_train,
             verbose=1,
