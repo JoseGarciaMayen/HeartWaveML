@@ -60,8 +60,15 @@ def build_pipeline(model_name: str, queue: str = "default") -> PipelineControlle
         version="1.0.1",
         target_project=False,
     )
-    pipe.set_default_execution_queue(queue)
     pipe.add_parameter(name="model_name", default=model_name)
+    pipe.add_parameter(
+        name="queue",
+        default=queue,
+        description="Execution queue for the steps. Edit per New Run to target e.g. vm2_queue.",
+    )
+    # New Run edits of the 'queue' parameter override the CLI default here.
+    resolved_queue = pipe.get_parameters().get("queue") or queue
+    pipe.set_default_execution_queue(resolved_queue)
     pipe.add_function_step(
         name="tune",
         function=run_tune,
