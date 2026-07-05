@@ -7,7 +7,6 @@
 [![TensorFlow](https://img.shields.io/badge/TensorFlow-2.x-orange.svg)](https://tensorflow.org/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Kaggle](https://img.shields.io/badge/📊-Kaggle_Notebook-blue.svg)](https://www.kaggle.com/code/josegarciamayen/heartwaveml)
-[![Blog]( https://img.shields.io/badge/🔗-Code_explanation-red)](https://josegarciamayen.com/blog)
 
 ![HeartWaveML](https://github.com/JoseGarciaMayen/HeartWaveML/blob/main/assets/heartwaveml_title.png)
 
