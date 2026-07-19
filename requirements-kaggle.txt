@@ -1,0 +1,14 @@
+# Kaggle runtime dependencies. CUDA/TensorFlow system packages are reused when available.
+kagglehub>=0.3
+clearml>=2,<3
+numpy>=1.26,<3
+pandas>=2.0,<3
+scikit-learn>=1.3,<2
+scipy>=1.10,<2
+joblib>=1.3,<2
+optuna>=4,<5
+xgboost>=3,<4
+tensorflow>=2.15,<3
+pyyaml>=6,<7
+python-dotenv>=1,<2
+wfdb>=4,<5

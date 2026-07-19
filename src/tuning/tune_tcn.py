@@ -1,3 +1,8 @@
+if __name__ == "__main__":
+    from src.runtime import configure_runtime
+
+    configure_runtime()
+
 import gc
 
 import numpy as np

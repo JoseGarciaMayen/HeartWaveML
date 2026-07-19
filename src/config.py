@@ -7,7 +7,19 @@ from dotenv import load_dotenv
 load_dotenv()
 
 os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "3")
-os.environ.setdefault("CUDA_VISIBLE_DEVICES", "-1")
+PROJECT_DEVICE = os.getenv("PROJECT_DEVICE", "")
+GPU_ENABLED = (
+    os.getenv("HEARTWAVEML_ENABLE_GPU", "").lower()
+    in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
+    or PROJECT_DEVICE.lower() == "cuda"
+)
+if not GPU_ENABLED:
+    os.environ.setdefault("CUDA_VISIBLE_DEVICES", "-1")
 
 _cfg_path = Path(__file__).parent.parent / "config.yaml"
 with open(_cfg_path) as f:
@@ -17,6 +29,10 @@ DATA = _cfg["data"]
 TUNING = _cfg["tuning"]
 SEQUENCES = _cfg.get("sequences", {})
 HARDWARE = _cfg.get("hardware", {})
+XGB_DEVICE = os.getenv(
+    "HEARTWAVEML_XGB_DEVICE",
+    "cuda" if PROJECT_DEVICE.lower() == "cuda" else HARDWARE.get("xgb_device", "cpu"),
+)
 
 
 def configure_tf_threads() -> None:

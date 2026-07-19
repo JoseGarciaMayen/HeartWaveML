@@ -23,7 +23,9 @@ __pycache__/
 !requirements_api.txt
 !requirements.txt
 !requirements-dev.txt
+!requirements-kaggle.txt
 .env
+remote-bridge.toml
 !*.dvc
 .venv
 catboost_info/

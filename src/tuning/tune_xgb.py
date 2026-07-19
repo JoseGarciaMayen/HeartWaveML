@@ -1,8 +1,13 @@
+if __name__ == "__main__":
+    from src.runtime import configure_runtime
+
+    configure_runtime()
+
 import optuna
 from sklearn.metrics import f1_score
 from xgboost import XGBClassifier
 
-from src.config import DATA, TUNING
+from src.config import DATA, TUNING, XGB_DEVICE
 from src.tracking import clearml_log_metrics, clearml_log_params
 from src.tuning.tuner import TunerBase
 from src.utils import get_class_weights, notify_telegram
@@ -40,6 +45,8 @@ class TunerXGB(TunerBase):
             eval_metric="mlogloss",
             n_jobs=-1,
             random_state=42,
+            tree_method="hist",
+            device=XGB_DEVICE,
             **params,
         )
         model.fit(self.X_train, self.y_train, sample_weight=self.sw_train, verbose=False)

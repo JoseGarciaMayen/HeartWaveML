@@ -132,9 +132,58 @@ python -m src.api
 ```
 This is the recommended option if you want to use this repo as a template to train your own models and try other combinations. Available models: `cnn_mlp`, `seq2seq`, `transformer`, `tcn`, `xgb` (swap `transformer` for any of them in the commands above).
 
+### 4. Train on Kaggle with Remote Bridge
+
+Remote Bridge can sync the project from your IDE to the Kaggle runtime and stream tuning/training
+output locally. The same tuner and trainer modules used locally are executed remotely; there is no
+second Kaggle entrypoint.
+
+```bash
+remote-bridge doctor project
+```
+
+Publish `data/processed/` once through the official Kaggle API:
+
+```bash
+remote-bridge dataset upload \
+    josegarciamayen/heartwaveml-features \
+    data/processed \
+    --version-notes "processed dataset"
+```
+
+From the project root, open the remote shell. It automatically prepares the configured project:
+
+```bash
+remote-bridge shell \
+    --headed \
+    --browser-channel chrome \
+    --connect-timeout 300
+```
+
+Inside the shell, use the same modules as in local execution. Remote Bridge configures the Kaggle
+runtime, mounts the dataset, enables the GPU and loads ClearML secrets before importing TensorFlow:
+
+```bash
+python -m src.tuning.tune_xgb
+python -m src.training.train_xgb
+python -m src.tuning.tune_transformer
+python -m src.training.train_transformer
+```
+
+Remote Bridge detects the available accelerator before starting the project and reports
+`gpu`, `tpu`, or `none`. It exports the result as `REMOTE_BRIDGE_ACCELERATOR` and maps it to
+`PROJECT_DEVICE` (`cuda`, `tpu`, or `cpu`).
+
+ClearML is mandatory for these direct tuning/training commands. Configure its API credentials with
+Kaggle Secrets or `CLEARML_API_HOST`, `CLEARML_API_ACCESS_KEY`, `CLEARML_API_SECRET_KEY` and
+`CLEARML_WEB_HOST`; the credentials are never synced or printed. Results and the best Optuna
+parameters can be pulled into `remote-bridge/`.
+
 #### CPU training performance
 
-All models are trained CPU-only (no GPU). Two things speed this up without changing results:
+Local runs remain CPU-only by default. Remote Bridge sets the generic `PROJECT_DEVICE=cuda`
+contract, which HeartWaveML maps to GPU configuration. Two things speed up CPU runs without
+changing results:
 
 - **XLA (`jit_compile=True`)**: instead of running each op eagerly, TensorFlow/XLA compiles the model into an optimized graph adapted to the host CPU before running it. Enabled on every `model.compile()` call in `src/training/` and `src/tuning/`.
 - **Thread pinning**: `configure_tf_threads()` (`src/config.py`) sets TF's intra/inter-op thread pools from `config.yaml` → `hardware`. Leave `intra_op_threads: null` to auto-detect via `os.cpu_count()`, or set an explicit number to cap it.

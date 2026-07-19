@@ -1,0 +1,18 @@
+notebook = "https://www.kaggle.com/code/OWNER/NOTEBOOK/edit"
+remote_dir = "/kaggle/working/HeartWaveML"
+entrypoint = "src/training/train_xgb.py"
+install = true
+pull = ["src/saved_models/", "outputs/"]
+pull_dir = "remote-bridge"
+
+[runtime]
+provider = "kaggle"
+dataset = "OWNER/DATASET"
+data_root = "/kaggle/working/HeartWaveML/data/processed"
+device = "auto"
+secrets = [
+    "CLEARML_API_HOST",
+    "CLEARML_WEB_HOST",
+    "CLEARML_API_ACCESS_KEY",
+    "CLEARML_API_SECRET_KEY",
+]

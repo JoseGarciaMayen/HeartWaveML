@@ -1,7 +1,12 @@
+if __name__ == "__main__":
+    from src.runtime import configure_runtime
+
+    configure_runtime()
+
 from sklearn.metrics import f1_score
 from xgboost import XGBClassifier
 
-from src.config import DATA
+from src.config import DATA, XGB_DEVICE
 from src.tracking import clearml_log_metrics, clearml_log_params
 from src.training.trainer import TrainerBase
 from src.utils import notify_telegram
@@ -32,6 +37,8 @@ class TrainerXGB(TrainerBase):
             eval_metric="mlogloss",
             n_jobs=-1,
             random_state=42,
+            tree_method="hist",
+            device=XGB_DEVICE,
             **p,
         )
 
